@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { StyleSheet, Text, View, Pressable, useColorScheme } from 'react-native';
 import { useAppStore } from '../../src/store/useAppStore';
+import { CategorySelector } from '../../src/components/CategorySelector';
 
 const formatTime = (timeInMillis: number) => {
   const minutes = Math.floor(timeInMillis / 60000);
@@ -11,7 +12,7 @@ const formatTime = (timeInMillis: number) => {
   const secsStr = minutes > 0 ? seconds.toString().padStart(2, '0') : seconds.toString();
   const msStr = centiseconds.toString().padStart(2, '0');
 
-  return `${minsStr}${secsStr}:${msStr}`; // Formato MM:SS:ms (centésimas)
+  return `${minsStr}${secsStr}:${msStr}`; 
 };
 
 export default function TimerScreen() {
@@ -28,7 +29,7 @@ export default function TimerScreen() {
   
   const handleSaveTime = (timeInMillis: number) => {
     console.log('Tiempo a guardar:', formatTime(timeInMillis), '(', timeInMillis, 'ms)');
-    // TODO: En el próximo paso implementaremos la inserción en SQLite aquí
+    // TODO: SQLite
   };
 
   const updateTime = () => {
@@ -40,15 +41,13 @@ export default function TimerScreen() {
 
   const handlePress = () => {
     if (isRunning) {
-      // Detener el cronómetro
       setIsRunning(false);
       if (requestRef.current) {
         cancelAnimationFrame(requestRef.current);
       }
       handleSaveTime(time);
-      generateNewScramble(); // Generamos un nuevo scramble automáticamente
+      generateNewScramble(); 
     } else {
-      // Iniciar el cronómetro
       setTime(0);
       startTimeRef.current = Date.now();
       setIsRunning(true);
@@ -56,7 +55,6 @@ export default function TimerScreen() {
     }
   };
 
-  // Limpieza al desmontar el componente para evitar memory leaks
   useEffect(() => {
     return () => {
       if (requestRef.current) {
@@ -66,28 +64,34 @@ export default function TimerScreen() {
   }, []);
 
   return (
-    <Pressable 
-      style={[styles.container, isDark && styles.containerDark]} 
-      onPress={handlePress}
-    >
-      <View style={styles.scrambleContainer}>
-        <Text style={[styles.scrambleText, isDark && styles.textDark]}>
-          {currentScramble}
-        </Text>
+    <View style={[styles.container, isDark && styles.containerDark]}>
+      {/* Al separar el área interactiva del selector del Pressable del timer, evitamos clics accidentales */}
+      <View style={styles.topSection}>
+        {!isRunning && <CategorySelector />}
+        <View style={styles.scrambleContainer}>
+          <Text style={[styles.scrambleText, isDark && styles.textDark]}>
+            {currentScramble}
+          </Text>
+        </View>
       </View>
-      
-      <View style={styles.timerContainer}>
-        <Text style={[styles.timerText, isDark && styles.textDark, isRunning && styles.timerRunning]}>
-          {formatTime(time)}
-        </Text>
-      </View>
-      
-      <View style={styles.instructionContainer}>
-        <Text style={[styles.instructionText, isDark && styles.textLight]}>
-          {isRunning ? 'Toca la pantalla para detener' : 'Toca la pantalla para iniciar'}
-        </Text>
-      </View>
-    </Pressable>
+
+      <Pressable 
+        style={styles.timerPressableArea} 
+        onPress={handlePress}
+      >
+        <View style={styles.timerContainer}>
+          <Text style={[styles.timerText, isDark && styles.textDark]}>
+            {formatTime(time)}
+          </Text>
+        </View>
+        
+        <View style={styles.instructionContainer}>
+          <Text style={[styles.instructionText, isDark && styles.textLight]}>
+            {isRunning ? 'Toca la pantalla para detener' : 'Toca la pantalla para iniciar'}
+          </Text>
+        </View>
+      </Pressable>
+    </View>
   );
 }
 
@@ -99,11 +103,17 @@ const styles = StyleSheet.create({
   containerDark: {
     backgroundColor: '#121212',
   },
+  topSection: {
+    paddingTop: 40,
+    zIndex: 10,
+  },
+  timerPressableArea: {
+    flex: 1,
+  },
   scrambleContainer: {
-    padding: 20,
-    paddingTop: 50,
+    paddingHorizontal: 20,
     alignItems: 'center',
-    minHeight: 150,
+    minHeight: 120,
     justifyContent: 'center',
   },
   scrambleText: {
@@ -121,12 +131,8 @@ const styles = StyleSheet.create({
   timerText: {
     fontSize: 85,
     fontWeight: '300',
-    fontVariant: ['tabular-nums'], // Evita que los números salten de ancho
+    fontVariant: ['tabular-nums'], 
     color: '#212529',
-  },
-  timerRunning: {
-    // Podríamos cambiar el color mientras corre, o simplemente dejarlo igual.
-    // Los speedcubers suelen preferir que no distraiga.
   },
   instructionContainer: {
     paddingBottom: 80,

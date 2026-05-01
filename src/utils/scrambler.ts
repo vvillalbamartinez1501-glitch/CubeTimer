@@ -1,10 +1,34 @@
 const MOVES_3X3 = ['U', 'D', 'R', 'L', 'F', 'B'];
 const MOVES_4X4 = [...MOVES_3X3, 'Uw', 'Dw', 'Rw', 'Lw', 'Fw', 'Bw'];
+const MOVES_2X2 = ['U', 'R', 'F'];
 const MODIFIERS = ['', "'", '2'];
 
-export const generateScramble = (cubeType: '3x3' | '4x4'): string => {
-  const moves = cubeType === '3x3' ? MOVES_3X3 : MOVES_4X4;
-  const length = cubeType === '3x3' ? 20 : 40;
+export const generateScramble = (cubeType: string): string => {
+  let moves = MOVES_3X3;
+  let length = 20;
+
+  if (cubeType === '2x2') {
+    moves = MOVES_2X2;
+    length = 10;
+  } else if (cubeType === '4x4') {
+    moves = MOVES_4X4;
+    length = 40;
+  } else if (cubeType.includes('x') && cubeType.length === 3) { 
+    // Para cubos grandes NxN usamos movimientos de 4x4 simplificados por ahora
+    moves = MOVES_4X4; 
+    length = parseInt(cubeType[0]) * 10;
+  } else if (cubeType === 'pyraminx') {
+    moves = ['U', 'R', 'L', 'B'];
+    length = 10;
+  } else if (cubeType === 'megaminx') {
+    moves = MOVES_3X3;
+    length = 40;
+  } else if (cubeType === 'generic') {
+    moves = MOVES_3X3;
+    // Longitud aleatoria entre 20 y 30
+    length = Math.floor(Math.random() * 11) + 20;
+  }
+
   let scramble: string[] = [];
 
   for (let i = 0; i < length; i++) {
@@ -19,7 +43,7 @@ export const generateScramble = (cubeType: '3x3' | '4x4'): string => {
       const lastMove = scramble.length > 0 ? scramble[scramble.length - 1] : null;
       const lastAxis = lastMove ? lastMove.charAt(0) : null;
       
-      // Avoid consecutive same-axis moves (e.g., R R')
+      // Avoid consecutive same-axis moves
       if (lastAxis !== axis) {
         if (scramble.length > 1) {
           const secondLastMove = scramble[scramble.length - 2];
@@ -31,7 +55,6 @@ export const generateScramble = (cubeType: '3x3' | '4x4'): string => {
                    (a === 'F' && b === 'B') || (a === 'B' && b === 'F');
           };
           
-          // Avoid sequences like R L R where the axis repeats surrounding its opposite
           if (isOpposite(axis, lastAxis as string) && axis === secondLastAxis) {
              continue; 
           }

@@ -8,12 +8,18 @@ export default function TabLayout() {
   const colorScheme = useColorScheme();
 
   useEffect(() => {
-    try {
-      initDB();
-      console.log('Database initialized successfully');
-    } catch (e) {
-      console.error("Error initializing DB:", e);
-    }
+    // Declaramos una función asíncrona dentro del useEffect
+    const setupDatabase = async () => {
+      try {
+        await initDB();
+        console.log('Database initialized successfully');
+      } catch (e) {
+        console.error("Error initializing DB:", e);
+      }
+    };
+
+    // La ejecutamos
+    setupDatabase();
   }, []);
 
   return (

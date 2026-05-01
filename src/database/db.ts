@@ -1,40 +1,34 @@
 import * as SQLite from 'expo-sqlite';
+import { Platform } from 'react-native';
 
-// Abrimos (o creamos) la base de datos de manera sincrónica (Expo SQLite SDK 50+)
-export const db = SQLite.openDatabaseSync('cubetimer.db');
+export const initDB = async () => {
+  // Si estamos en la web, simulamos que todo salió bien y no hacemos nada
+  if (Platform.OS === 'web') {
+    console.warn("⚠️ Ejecutando en Web: SQLite está desactivado para evitar errores de SharedArrayBuffer. Los datos no se guardarán.");
+    return null;
+  }
 
-export const initDB = () => {
-  // Ejecutamos las consultas para la creación de tablas
-  db.execSync(`
-    PRAGMA journal_mode = WAL;
-
-    CREATE TABLE IF NOT EXISTS Users (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL,
-      createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
-
-    CREATE TABLE IF NOT EXISTS PuzzleCategories (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL UNIQUE
-    );
-
-    CREATE TABLE IF NOT EXISTS SolveRecords (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      userId INTEGER NOT NULL,
-      categoryId INTEGER NOT NULL,
-      timeMs INTEGER NOT NULL,
-      scramble TEXT NOT NULL,
-      penalty TEXT DEFAULT 'NONE', -- 'NONE', 'PLUS_TWO', 'DNF'
-      createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (userId) REFERENCES Users (id) ON DELETE CASCADE,
-      FOREIGN KEY (categoryId) REFERENCES PuzzleCategories (id) ON DELETE CASCADE
-    );
-
-    -- Insertamos los puzzles por defecto
-    INSERT OR IGNORE INTO PuzzleCategories (name) VALUES ('3x3'), ('2x2'), ('4x4'), ('Pyraminx'), ('Megaminx');
+  // Si estamos en un dispositivo móvil real (o emulador), usamos SQLite
+  try {
+    const db = await SQLite.openDatabaseAsync('cubetimer.db');
     
-    -- Insertamos un usuario por defecto si no existe
-    INSERT OR IGNORE INTO Users (id, name) VALUES (1, 'Jugador 1');
-  `);
+    await db.execAsync(`
+      PRAGMA journal_mode = WAL;
+      CREATE TABLE IF NOT EXISTS Users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT);
+      CREATE TABLE IF NOT EXISTS Categories (id TEXT PRIMARY KEY, name TEXT);
+      CREATE TABLE IF NOT EXISTS SolveRecords (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, 
+        userId INTEGER, 
+        categoryId TEXT, 
+        time INTEGER, 
+        scramble TEXT, 
+        date TEXT
+      );
+    `);
+    
+    return db;
+  } catch (error) {
+    console.error("Error al inicializar la base de datos:", error);
+    return null;
+  }
 };

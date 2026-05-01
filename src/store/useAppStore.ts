@@ -3,34 +3,39 @@ import { generateScramble } from '../utils/scrambler';
 
 interface AppState {
   activeUserId: number;
-  activeCategoryId: number; // 1 = 3x3, 3 = 4x4, etc.
+  activeCategoryId: string; 
+  customCategoryName: string;
   currentScramble: string;
   generateNewScramble: () => void;
-  setActiveCategory: (id: number) => void;
+  setActiveCategory: (id: string, customName?: string) => void;
   setActiveUser: (id: number) => void;
 }
 
-// Convert category ID to cube type based on our default inserts
-const getCubeTypeFromCategory = (categoryId: number): '3x3' | '4x4' => {
-  // Según nuestros INSERTS en SQLite: 1: 3x3, 2: 2x2, 3: 4x4
-  if (categoryId === 3) return '4x4';
-  return '3x3'; 
+const isGenericScramble = (id: string) => {
+  return id === 'custom' || id.includes('ghost') || id.includes('mirror');
 };
 
 export const useAppStore = create<AppState>((set, get) => ({
-  activeUserId: 1, // Default user
-  activeCategoryId: 1, // Default to 3x3
+  activeUserId: 1, // Usuario predeterminado
+  activeCategoryId: '3x3', // Cubo predeterminado
+  customCategoryName: '',
   currentScramble: generateScramble('3x3'),
   
   generateNewScramble: () => {
     const { activeCategoryId } = get();
-    const cubeType = getCubeTypeFromCategory(activeCategoryId);
-    set({ currentScramble: generateScramble(cubeType) });
+    if (isGenericScramble(activeCategoryId)) {
+      set({ currentScramble: generateScramble('generic') });
+    } else {
+      set({ currentScramble: generateScramble(activeCategoryId) });
+    }
   },
   
-  setActiveCategory: (id: number) => {
-    set({ activeCategoryId: id });
-    get().generateNewScramble(); // Ensure scramble matches new category
+  setActiveCategory: (id: string, customName?: string) => {
+    set({ 
+      activeCategoryId: id,
+      customCategoryName: customName || ''
+    });
+    get().generateNewScramble();
   },
 
   setActiveUser: (id: number) => {
