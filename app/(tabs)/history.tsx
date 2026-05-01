@@ -1,9 +1,9 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-export default function TimerScreen() {
+export default function HistoryScreen() {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Timer</Text>
+      <Text style={styles.title}>Historial de Tiempos</Text>
     </View>
   );
 }

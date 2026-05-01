@@ -1,9 +1,9 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-export default function TimerScreen() {
+export default function ProfileScreen() {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Timer</Text>
+      <Text style={styles.title}>Perfil de Usuario</Text>
     </View>
   );
 }

@@ -1,33 +1,46 @@
+import React, { useEffect } from 'react';
 import { Tabs } from 'expo-router';
-import React from 'react';
-
-import { HapticTab } from '@/components/haptic-tab';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Ionicons } from '@expo/vector-icons';
+import { useColorScheme } from 'react-native';
+import { initDB } from '../../src/database/db';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
 
+  useEffect(() => {
+    try {
+      initDB();
+      console.log('Database initialized successfully');
+    } catch (e) {
+      console.error("Error initializing DB:", e);
+    }
+  }, []);
+
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-        headerShown: false,
-        tabBarButton: HapticTab,
+        tabBarActiveTintColor: colorScheme === 'dark' ? '#4dabf7' : '#007aff',
+        headerShown: true,
       }}>
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+          title: 'Timer',
+          tabBarIcon: ({ color }) => <Ionicons name="timer-outline" size={24} color={color} />,
         }}
       />
       <Tabs.Screen
-        name="explore"
+        name="history"
         options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
+          title: 'Historial',
+          tabBarIcon: ({ color }) => <Ionicons name="list-outline" size={24} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Perfil',
+          tabBarIcon: ({ color }) => <Ionicons name="person-outline" size={24} color={color} />,
         }}
       />
     </Tabs>
