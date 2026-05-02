@@ -1,11 +1,12 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { StyleSheet, Text, View, Pressable, useColorScheme, Switch, Platform } from 'react-native';
+import { StyleSheet, Text, View, Pressable, useColorScheme, Switch, Platform, Alert } from 'react-native';
 import { useAppStore } from '../../src/store/useAppStore';
 import { CategorySelector } from '../../src/components/CategorySelector';
-import { saveSolve } from '../../src/database/operations';
+import { saveSolve, getTotalSolves, getCategorySolveCount } from '../../src/database/operations';
 import { formatTime } from '../../src/utils/timeFormat';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
+import { useGamificationStore } from '../../src/store/gamificationStore';
 
 type TimerState = 'idle' | 'inspecting' | 'holding' | 'running' | 'finished';
 
@@ -13,8 +14,9 @@ export default function TimerScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const { t } = useTranslation();
-  
+
   const { currentScramble, generateNewScramble, activeUserId, activeCategoryId } = useAppStore();
+  const { updateStreak, checkAchievements } = useGamificationStore();
   
   const [time, setTime] = useState(0);
   const [timerState, setTimerState] = useState<TimerState>('idle');
@@ -140,7 +142,28 @@ export default function TimerScreen() {
   };
 
   const handleSave = async () => {
+    // 1. Persist the solve
     await saveSolve(activeUserId, activeCategoryId, time, currentScramble);
+
+    // 2. Update daily streak
+    updateStreak();
+
+    // 3. Check achievements (fetch counts after save so they include this solve)
+    const [total, catTotal] = await Promise.all([
+      getTotalSolves(activeUserId),
+      getCategorySolveCount(activeUserId, activeCategoryId),
+    ]);
+    const newAchievements = checkAchievements(time, activeCategoryId, total, catTotal);
+
+    // 4. Show alert for each newly unlocked achievement
+    for (const ach of newAchievements) {
+      Alert.alert(
+        `🏆 Achievement Unlocked!`,
+        `${ach.icon ? '' : ''}${ach.title}\n${ach.description}`,
+      );
+    }
+
+    // 5. Reset timer
     setTime(0);
     setTimerStateSync('idle');
     setHasPenalty(false);

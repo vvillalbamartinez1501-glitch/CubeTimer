@@ -167,3 +167,17 @@ export const deleteSolve = async (solveId: number): Promise<void> => {
   await _saveAll(all.filter(s => s.id !== solveId));
   console.log(`🗑️ Solve ${solveId} eliminado de AsyncStorage.`);
 };
+
+// ─── 4. TOTAL SOLVES (for achievements) ──────────────────────────────────────
+export const getTotalSolves = async (userId: number): Promise<number> => {
+  const all = await _loadAll();
+  return all.filter(s => s.userId === userId).length;
+};
+
+export const getCategorySolveCount = async (
+  userId: number,
+  categoryId: string,
+): Promise<number> => {
+  const all = await _loadAll();
+  return all.filter(s => s.userId === userId && s.categoryId === categoryId).length;
+};
