@@ -2,6 +2,7 @@
   "tabs": {
     "timer": "Chrono",
     "history": "Historique",
+    "stats": "Stats",
     "learn": "Apprendre",
     "profile": "Profil"
   },
@@ -40,6 +41,22 @@
     "settings": "Paramètres",
     "appInfo": "Infos de l'App",
     "version": "Version"
+  },
+  "stats": {
+    "title": "Statistiques",
+    "noData": "Aucun temps pour cette catégorie.",
+    "noDataSub": "Commencez à résoudre pour voir votre progression !",
+    "progressionChart": "Progression Personnelle",
+    "distributionChart": "Distribution des Temps",
+    "comparisonChart": "Comparaison Mondiale",
+    "individualTime": "Temps Individuel",
+    "movingAverage": "Moyenne Mobile (Ao5)",
+    "worldRecord": "Record du Monde",
+    "globalAverage": "Moyenne Mondiale",
+    "yourAverage": "Votre Moyenne",
+    "solveNumber": "Résolution #",
+    "seconds": "secondes",
+    "count": "Nombre"
   },
   "categories": {
     "selectCube": "Sélectionnez votre Cube",

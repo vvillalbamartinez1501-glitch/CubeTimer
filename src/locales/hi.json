@@ -2,6 +2,7 @@
   "tabs": {
     "timer": "टाइमर",
     "history": "इतिहास",
+    "stats": "आँकड़े",
     "learn": "सीखें",
     "profile": "प्रोफ़ाइल"
   },
@@ -40,6 +41,22 @@
     "settings": "सेटिंग्स",
     "appInfo": "ऐप जानकारी",
     "version": "संस्करण"
+  },
+  "stats": {
+    "title": "आँकड़े",
+    "noData": "इस श्रेणी में कोई डेटा नहीं।",
+    "noDataSub": "अपनी प्रगति देखने के लिए हल करना शुरू करें!",
+    "progressionChart": "व्यक्तिगत प्रगति",
+    "distributionChart": "समय वितरण",
+    "comparisonChart": "वैश्विक तुलना",
+    "individualTime": "व्यक्तिगत समय",
+    "movingAverage": "चलती औसत (Ao5)",
+    "worldRecord": "विश्व रिकॉर्ड",
+    "globalAverage": "वैश्विक औसत",
+    "yourAverage": "आपका औसत",
+    "solveNumber": "सॉल्व #",
+    "seconds": "सेकंड",
+    "count": "संख्या"
   },
   "categories": {
     "selectCube": "अपना क्यूब चुनें",

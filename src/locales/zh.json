@@ -2,6 +2,7 @@
   "tabs": {
     "timer": "计时器",
     "history": "历史记录",
+    "stats": "统计",
     "learn": "学习",
     "profile": "个人资料"
   },
@@ -40,6 +41,22 @@
     "settings": "设置",
     "appInfo": "应用信息",
     "version": "版本"
+  },
+  "stats": {
+    "title": "统计数据",
+    "noData": "此类别暂无还原记录。",
+    "noDataSub": "开始还原以查看进步！",
+    "progressionChart": "个人进步",
+    "distributionChart": "时间分布",
+    "comparisonChart": "全球对比",
+    "individualTime": "单次时间",
+    "movingAverage": "移动平均 (Ao5)",
+    "worldRecord": "世界纪录",
+    "globalAverage": "全球平均",
+    "yourAverage": "你的平均",
+    "solveNumber": "第#次",
+    "seconds": "秒",
+    "count": "次数"
   },
   "categories": {
     "selectCube": "选择你的魔方",

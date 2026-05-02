@@ -2,6 +2,7 @@
   "tabs": {
     "timer": "Timer",
     "history": "History",
+    "stats": "Stats",
     "learn": "Learn",
     "profile": "Profile"
   },
@@ -40,6 +41,22 @@
     "settings": "Settings",
     "appInfo": "App Info",
     "version": "Version"
+  },
+  "stats": {
+    "title": "Statistics",
+    "noData": "No solves yet for this category.",
+    "noDataSub": "Start solving to see your progress!",
+    "progressionChart": "Personal Progression",
+    "distributionChart": "Time Distribution",
+    "comparisonChart": "Global Comparison",
+    "individualTime": "Individual Time",
+    "movingAverage": "Moving Average (Ao5)",
+    "worldRecord": "World Record",
+    "globalAverage": "Global Average",
+    "yourAverage": "Your Average",
+    "solveNumber": "Solve #",
+    "seconds": "seconds",
+    "count": "Count"
   },
   "categories": {
     "selectCube": "Select your Cube",
