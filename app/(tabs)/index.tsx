@@ -1,9 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { StyleSheet, Text, View, Pressable, useColorScheme } from 'react-native';
+import { StyleSheet, Text, View, Pressable, useColorScheme, TouchableOpacity } from 'react-native';
 import { useAppStore } from '../../src/store/useAppStore';
 import { CategorySelector } from '../../src/components/CategorySelector';
 import { saveSolve } from '../../src/database/operations';
 import { formatTime } from '../../src/utils/timeFormat';
+import { Ionicons } from '@expo/vector-icons';
+
+type TimerState = 'idle' | 'running' | 'finished';
 
 export default function TimerScreen() {
   const colorScheme = useColorScheme();
@@ -12,15 +15,10 @@ export default function TimerScreen() {
   const { currentScramble, generateNewScramble, activeUserId, activeCategoryId } = useAppStore();
   
   const [time, setTime] = useState(0);
-  const [isRunning, setIsRunning] = useState(false);
+  const [timerState, setTimerState] = useState<TimerState>('idle');
   
   const requestRef = useRef<number>();
   const startTimeRef = useRef<number>(0);
-  
-  const handleSaveTime = async (timeInMillis: number) => {
-    // Guardar en la base de datos local SQLite
-    await saveSolve(activeUserId, activeCategoryId, timeInMillis, currentScramble);
-  };
 
   const updateTime = () => {
     if (startTimeRef.current === 0) return;
@@ -29,20 +27,39 @@ export default function TimerScreen() {
     requestRef.current = requestAnimationFrame(updateTime);
   };
 
-  const handlePress = () => {
-    if (isRunning) {
-      setIsRunning(false);
+  const handlePressArea = () => {
+    if (timerState === 'finished') return; // Bloquear iniciar de nuevo si está en modo decisión
+
+    if (timerState === 'running') {
+      // Detener
+      setTimerState('finished');
       if (requestRef.current) {
         cancelAnimationFrame(requestRef.current);
       }
-      handleSaveTime(time);
-      generateNewScramble(); 
-    } else {
+    } else if (timerState === 'idle') {
+      // Iniciar
       setTime(0);
       startTimeRef.current = Date.now();
-      setIsRunning(true);
+      setTimerState('running');
       requestRef.current = requestAnimationFrame(updateTime);
     }
+  };
+
+  const handleAddTwo = () => {
+    setTime(prevTime => prevTime + 2000);
+  };
+
+  const handleDiscard = () => {
+    setTime(0);
+    setTimerState('idle');
+    generateNewScramble();
+  };
+
+  const handleSave = async () => {
+    await saveSolve(activeUserId, activeCategoryId, time, currentScramble);
+    setTime(0);
+    setTimerState('idle');
+    generateNewScramble();
   };
 
   useEffect(() => {
@@ -56,7 +73,7 @@ export default function TimerScreen() {
   return (
     <View style={[styles.container, isDark && styles.containerDark]}>
       <View style={styles.topSection}>
-        {!isRunning && <CategorySelector />}
+        {timerState !== 'running' && <CategorySelector />}
         <View style={styles.scrambleContainer}>
           <Text style={[styles.scrambleText, isDark && styles.textDark]}>
             {currentScramble}
@@ -66,7 +83,7 @@ export default function TimerScreen() {
 
       <Pressable 
         style={styles.timerPressableArea} 
-        onPress={handlePress}
+        onPress={handlePressArea}
       >
         <View style={styles.timerContainer}>
           <Text style={[styles.timerText, isDark && styles.textDark]}>
@@ -74,11 +91,27 @@ export default function TimerScreen() {
           </Text>
         </View>
         
-        <View style={styles.instructionContainer}>
-          <Text style={[styles.instructionText, isDark && styles.textLight]}>
-            {isRunning ? 'Toca la pantalla para detener' : 'Toca la pantalla para iniciar'}
-          </Text>
-        </View>
+        {timerState === 'finished' ? (
+          <View style={styles.actionRow}>
+            <TouchableOpacity onPress={handleDiscard} style={[styles.actionButton, styles.buttonDelete]}>
+              <Ionicons name="trash" size={32} color="#fff" />
+            </TouchableOpacity>
+            
+            <TouchableOpacity onPress={handleAddTwo} style={[styles.actionButton, styles.buttonPenalty]}>
+              <Text style={styles.penaltyText}>+2s</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity onPress={handleSave} style={[styles.actionButton, styles.buttonSave]}>
+              <Ionicons name="checkmark" size={36} color="#fff" />
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View style={styles.instructionContainer}>
+            <Text style={[styles.instructionText, isDark && styles.textLight]}>
+              {timerState === 'running' ? 'Toca la pantalla para detener' : 'Toca la pantalla para iniciar'}
+            </Text>
+          </View>
+        )}
       </Pressable>
     </View>
   );
@@ -137,5 +170,38 @@ const styles = StyleSheet.create({
   },
   textLight: {
     color: '#adb5bd',
+  },
+  actionRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingBottom: 60,
+    gap: 30,
+  },
+  actionButton: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  buttonDelete: {
+    backgroundColor: '#ff4444',
+  },
+  buttonPenalty: {
+    backgroundColor: '#f39c12',
+  },
+  buttonSave: {
+    backgroundColor: '#00C851',
+  },
+  penaltyText: {
+    color: '#fff',
+    fontSize: 20,
+    fontWeight: 'bold',
   },
 });

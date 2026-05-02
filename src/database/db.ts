@@ -10,10 +10,12 @@ export const initDB = async () => {
 
   // Si estamos en un dispositivo móvil real (o emulador), usamos SQLite
   try {
-    const db = await SQLite.openDatabaseAsync('cubetimer.db');
+const db = await SQLite.openDatabaseAsync('cubetimer.db');
     
     await db.execAsync(`
       PRAGMA journal_mode = WAL;
+      DROP TABLE IF EXISTS SolveRecords; /* <-- AÑADE ESTA LÍNEA TEMPORALMENTE */
+      
       CREATE TABLE IF NOT EXISTS Users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT);
       CREATE TABLE IF NOT EXISTS Categories (id TEXT PRIMARY KEY, name TEXT);
       CREATE TABLE IF NOT EXISTS SolveRecords (
