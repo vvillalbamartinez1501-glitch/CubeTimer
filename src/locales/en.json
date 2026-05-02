@@ -1,0 +1,50 @@
+{
+  "tabs": {
+    "timer": "Timer",
+    "history": "History",
+    "learn": "Learn",
+    "profile": "Profile"
+  },
+  "timer": {
+    "holdToStart": "Hold screen or space to start",
+    "pressToReady": "Press and hold to get ready",
+    "releaseToStart": "Release to start",
+    "tapToStop": "Tap to stop",
+    "inspectionWCA": "15s WCA Inspection"
+  },
+  "actions": {
+    "save": "Save",
+    "delete": "Delete",
+    "plus2": "+2s",
+    "confirm": "Confirm",
+    "cancel": "Cancel"
+  },
+  "history": {
+    "title": "Solve History",
+    "bestTime": "Best Time",
+    "ao5": "Ao5",
+    "empty": "No solves recorded for this category.",
+    "webNotAvailable": "Local storage is not available in the web version yet."
+  },
+  "learn": {
+    "basic": "Basic",
+    "cfop": "CFOP",
+    "methods": "Methods",
+    "advanced": "Advanced"
+  },
+  "profile": {
+    "title": "Profile",
+    "language": "Language",
+    "selectLanguage": "Select Language",
+    "currentUser": "Current User",
+    "settings": "Settings",
+    "appInfo": "App Info",
+    "version": "Version"
+  },
+  "categories": {
+    "selectCube": "Select your Cube",
+    "custom": "Custom (Cuboids, etc.)",
+    "customLabel": "Custom category name:",
+    "customPlaceholder": "E.g. Cuboid 3x3x5"
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "tabs": {
+    "timer": "计时器",
+    "history": "历史记录",
+    "learn": "学习",
+    "profile": "个人资料"
+  },
+  "timer": {
+    "holdToStart": "按住屏幕或空格键开始",
+    "pressToReady": "按住准备",
+    "releaseToStart": "松开开始",
+    "tapToStop": "点击停止",
+    "inspectionWCA": "15秒 WCA 观察时间"
+  },
+  "actions": {
+    "save": "保存",
+    "delete": "删除",
+    "plus2": "+2秒",
+    "confirm": "确认",
+    "cancel": "取消"
+  },
+  "history": {
+    "title": "还原历史",
+    "bestTime": "最佳时间",
+    "ao5": "五次平均",
+    "empty": "此类别暂无还原记录。",
+    "webNotAvailable": "网页版暂不支持本地存储。"
+  },
+  "learn": {
+    "basic": "基础",
+    "cfop": "CFOP",
+    "methods": "方法",
+    "advanced": "进阶"
+  },
+  "profile": {
+    "title": "个人资料",
+    "language": "语言",
+    "selectLanguage": "选择语言",
+    "currentUser": "当前用户",
+    "settings": "设置",
+    "appInfo": "应用信息",
+    "version": "版本"
+  },
+  "categories": {
+    "selectCube": "选择你的魔方",
+    "custom": "自定义（异形魔方等）",
+    "customLabel": "自定义类别名称：",
+    "customPlaceholder": "例如：3x3x5 长方体"
+  }
+}

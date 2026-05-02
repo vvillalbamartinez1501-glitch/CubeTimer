@@ -1,0 +1,50 @@
+{
+  "tabs": {
+    "timer": "Cronómetro",
+    "history": "Historial",
+    "learn": "Aprender",
+    "profile": "Perfil"
+  },
+  "timer": {
+    "holdToStart": "Mantén presionado el espacio",
+    "pressToReady": "Presiona y mantén para estar listo",
+    "releaseToStart": "Suelta para iniciar",
+    "tapToStop": "Toca para detener",
+    "inspectionWCA": "15s Inspección WCA"
+  },
+  "actions": {
+    "save": "Guardar",
+    "delete": "Eliminar",
+    "plus2": "+2s",
+    "confirm": "Confirmar",
+    "cancel": "Cancelar"
+  },
+  "history": {
+    "title": "Historial de Tiempos",
+    "bestTime": "Mejor Tiempo",
+    "ao5": "Ao5",
+    "empty": "No hay tiempos guardados en esta categoría.",
+    "webNotAvailable": "El guardado local no está disponible en la versión Web por ahora."
+  },
+  "learn": {
+    "basic": "Básico",
+    "cfop": "CFOP",
+    "methods": "Métodos",
+    "advanced": "Avanzado"
+  },
+  "profile": {
+    "title": "Perfil",
+    "language": "Idioma",
+    "selectLanguage": "Seleccionar Idioma",
+    "currentUser": "Usuario Actual",
+    "settings": "Ajustes",
+    "appInfo": "Info de la App",
+    "version": "Versión"
+  },
+  "categories": {
+    "selectCube": "Selecciona tu Cubo",
+    "customLabel": "Nombre de categoría personalizada:",
+    "custom": "Personalizado (Cuboides, etc.)",
+    "customPlaceholder": "Ej. Cuboide 3x3x5"
+  }
+}

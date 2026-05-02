@@ -1,0 +1,50 @@
+{
+  "tabs": {
+    "timer": "Chrono",
+    "history": "Historique",
+    "learn": "Apprendre",
+    "profile": "Profil"
+  },
+  "timer": {
+    "holdToStart": "Maintenez l'écran ou la barre espace",
+    "pressToReady": "Appuyez et maintenez pour vous préparer",
+    "releaseToStart": "Relâchez pour démarrer",
+    "tapToStop": "Touchez pour arrêter",
+    "inspectionWCA": "15s Inspection WCA"
+  },
+  "actions": {
+    "save": "Enregistrer",
+    "delete": "Supprimer",
+    "plus2": "+2s",
+    "confirm": "Confirmer",
+    "cancel": "Annuler"
+  },
+  "history": {
+    "title": "Historique des Temps",
+    "bestTime": "Meilleur Temps",
+    "ao5": "Ao5",
+    "empty": "Aucun temps enregistré pour cette catégorie.",
+    "webNotAvailable": "Le stockage local n'est pas disponible sur la version Web pour l'instant."
+  },
+  "learn": {
+    "basic": "Basique",
+    "cfop": "CFOP",
+    "methods": "Méthodes",
+    "advanced": "Avancé"
+  },
+  "profile": {
+    "title": "Profil",
+    "language": "Langue",
+    "selectLanguage": "Choisir la Langue",
+    "currentUser": "Utilisateur Actuel",
+    "settings": "Paramètres",
+    "appInfo": "Infos de l'App",
+    "version": "Version"
+  },
+  "categories": {
+    "selectCube": "Sélectionnez votre Cube",
+    "custom": "Personnalisé (Cuboïdes, etc.)",
+    "customLabel": "Nom de la catégorie personnalisée :",
+    "customPlaceholder": "Ex. Cuboïde 3x3x5"
+  }
+}

@@ -5,12 +5,14 @@ import { CategorySelector } from '../../src/components/CategorySelector';
 import { saveSolve } from '../../src/database/operations';
 import { formatTime } from '../../src/utils/timeFormat';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 
 type TimerState = 'idle' | 'inspecting' | 'holding' | 'running' | 'finished';
 
 export default function TimerScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
+  const { t } = useTranslation();
   
   const { currentScramble, generateNewScramble, activeUserId, activeCategoryId } = useAppStore();
   
@@ -164,10 +166,10 @@ export default function TimerScreen() {
   };
 
   const renderInstructionText = () => {
-    if (timerState === 'idle') return 'Mantén presionada la pantalla o espacio';
-    if (timerState === 'inspecting') return 'Presiona y mantén para estar listo';
-    if (timerState === 'holding') return 'Suelta para iniciar';
-    if (timerState === 'running') return 'Toca para detener';
+    if (timerState === 'idle') return t('timer.holdToStart');
+    if (timerState === 'inspecting') return t('timer.pressToReady');
+    if (timerState === 'holding') return t('timer.releaseToStart');
+    if (timerState === 'running') return t('timer.tapToStop');
     return '';
   };
 
@@ -215,7 +217,7 @@ export default function TimerScreen() {
           <View style={styles.instructionContainer}>
             {timerState === 'idle' && (
               <View style={styles.inspectionToggleContainer}>
-                <Text style={[styles.inspectionText, isDark && styles.textDark]}>15s Inspección WCA</Text>
+                <Text style={[styles.inspectionText, isDark && styles.textDark]}>{t('timer.inspectionWCA')}</Text>
                 <Switch 
                   value={isInspectionEnabled} 
                   onValueChange={setIsInspectionEnabled} 

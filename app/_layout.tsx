@@ -3,6 +3,9 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 
+// Inicializar i18n ANTES de cualquier pantalla
+import '../src/i18n';
+
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
 export const unstable_settings = {

@@ -1,0 +1,50 @@
+{
+  "tabs": {
+    "timer": "टाइमर",
+    "history": "इतिहास",
+    "learn": "सीखें",
+    "profile": "प्रोफ़ाइल"
+  },
+  "timer": {
+    "holdToStart": "शुरू करने के लिए स्क्रीन या स्पेस दबाकर रखें",
+    "pressToReady": "तैयार होने के लिए दबाकर रखें",
+    "releaseToStart": "शुरू करने के लिए छोड़ें",
+    "tapToStop": "रोकने के लिए टैप करें",
+    "inspectionWCA": "15 सेकंड WCA निरीक्षण"
+  },
+  "actions": {
+    "save": "सहेजें",
+    "delete": "हटाएं",
+    "plus2": "+2 सेकंड",
+    "confirm": "पुष्टि करें",
+    "cancel": "रद्द करें"
+  },
+  "history": {
+    "title": "सॉल्व इतिहास",
+    "bestTime": "सर्वश्रेष्ठ समय",
+    "ao5": "Ao5",
+    "empty": "इस श्रेणी में कोई सॉल्व रिकॉर्ड नहीं है।",
+    "webNotAvailable": "वेब संस्करण में लोकल स्टोरेज उपलब्ध नहीं है।"
+  },
+  "learn": {
+    "basic": "बुनियादी",
+    "cfop": "CFOP",
+    "methods": "विधियाँ",
+    "advanced": "उन्नत"
+  },
+  "profile": {
+    "title": "प्रोफ़ाइल",
+    "language": "भाषा",
+    "selectLanguage": "भाषा चुनें",
+    "currentUser": "वर्तमान उपयोगकर्ता",
+    "settings": "सेटिंग्स",
+    "appInfo": "ऐप जानकारी",
+    "version": "संस्करण"
+  },
+  "categories": {
+    "selectCube": "अपना क्यूब चुनें",
+    "custom": "कस्टम (क्यूबॉइड, आदि)",
+    "customLabel": "कस्टम श्रेणी का नाम:",
+    "customPlaceholder": "उदा. क्यूबॉइड 3x3x5"
+  }
+}

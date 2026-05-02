@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, useColorScheme } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { BasicTutorial } from '../../src/components/learning/BasicTutorial';
 import { CfopSection } from '../../src/components/learning/CfopSection';
 import { MethodsGuide } from '../../src/components/learning/MethodsGuide';
@@ -7,16 +8,17 @@ import { AdvancedTips } from '../../src/components/learning/AdvancedTips';
 
 type Section = 'basic' | 'cfop' | 'methods' | 'advanced';
 
-const SECTIONS: { key: Section; label: string; emoji: string }[] = [
-  { key: 'basic', label: 'Básico', emoji: '📖' },
-  { key: 'cfop', label: 'CFOP', emoji: '⚡' },
-  { key: 'methods', label: 'Métodos', emoji: '🧩' },
-  { key: 'advanced', label: 'Avanzado', emoji: '🚀' },
+const SECTIONS: { key: Section; i18nKey: string; emoji: string }[] = [
+  { key: 'basic', i18nKey: 'learn.basic', emoji: '📖' },
+  { key: 'cfop', i18nKey: 'learn.cfop', emoji: '⚡' },
+  { key: 'methods', i18nKey: 'learn.methods', emoji: '🧩' },
+  { key: 'advanced', i18nKey: 'learn.advanced', emoji: '🚀' },
 ];
 
 export default function LearnScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
+  const { t } = useTranslation();
   const [activeSection, setActiveSection] = useState<Section>('basic');
 
   const renderSection = () => {
@@ -52,7 +54,7 @@ export default function LearnScreen() {
               isDark && styles.menuLabelDark,
               activeSection === section.key && styles.menuLabelActive,
             ]}>
-              {section.label}
+              {t(section.i18nKey)}
             </Text>
           </TouchableOpacity>
         ))}

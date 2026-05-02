@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, View, Modal, FlatList, TextInput, useColorScheme, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { CATEGORIES, Category } from '../constants/categories';
 import { useAppStore } from '../store/useAppStore';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 export const CategorySelector = () => {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
+  const { t } = useTranslation();
   
   const { activeCategoryId, customCategoryName, setActiveCategory } = useAppStore();
   const [modalVisible, setModalVisible] = useState(false);
@@ -76,7 +78,7 @@ export const CategorySelector = () => {
           <View style={[styles.modalContent, isDark && styles.modalContentDark]}>
             <View style={styles.modalHeader}>
               <Text style={[styles.modalTitle, isDark && styles.textDark]}>
-                Selecciona tu Cubo
+                {t('categories.selectCube')}
               </Text>
               <TouchableOpacity onPress={() => { setModalVisible(false); setShowCustomInput(false); }}>
                 <Ionicons name="close" size={28} color={isDark ? '#fff' : '#000'} />
@@ -86,18 +88,18 @@ export const CategorySelector = () => {
             {showCustomInput ? (
               <View style={styles.customContainer}>
                 <Text style={[styles.customLabel, isDark && styles.textDark]}>
-                  Nombre de categoría personalizada:
+                  {t('categories.customLabel')}
                 </Text>
                 <TextInput
                   style={[styles.input, isDark && styles.inputDark]}
-                  placeholder="Ej. Cuboide 3x3x5"
+                  placeholder={t('categories.customPlaceholder')}
                   placeholderTextColor={isDark ? "#888" : "#ccc"}
                   value={tempCustomName}
                   onChangeText={setTempCustomName}
                   autoFocus
                 />
                 <TouchableOpacity style={styles.confirmButton} onPress={confirmCustom}>
-                  <Text style={styles.confirmButtonText}>Confirmar</Text>
+                  <Text style={styles.confirmButtonText}>{t('actions.confirm')}</Text>
                 </TouchableOpacity>
               </View>
             ) : (

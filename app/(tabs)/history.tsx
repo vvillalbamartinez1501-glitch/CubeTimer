@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { StyleSheet, Text, View, FlatList, TouchableOpacity, useColorScheme, Platform } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { useAppStore } from '../../src/store/useAppStore';
 import { getSolves, deleteSolve } from '../../src/database/operations';
 import { formatTime } from '../../src/utils/timeFormat';
@@ -17,6 +18,7 @@ interface SolveRecord {
 export default function HistoryScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
+  const { t } = useTranslation();
   
   const { activeUserId, activeCategoryId } = useAppStore();
   const [solves, setSolves] = useState<SolveRecord[]>([]);
@@ -84,18 +86,18 @@ export default function HistoryScreen() {
       
       <View style={[styles.statsContainer, isDark && styles.statsContainerDark]}>
         <View style={styles.statBox}>
-          <Text style={styles.statLabel}>Best Time</Text>
+          <Text style={styles.statLabel}>{t('history.bestTime')}</Text>
           <Text style={[styles.statValue, isDark && styles.textDark]}>{calculateBest()}</Text>
         </View>
         <View style={styles.statBox}>
-          <Text style={styles.statLabel}>Ao5</Text>
+          <Text style={styles.statLabel}>{t('history.ao5')}</Text>
           <Text style={[styles.statValue, isDark && styles.textDark]}>{calculateAo5()}</Text>
         </View>
       </View>
 
       {Platform.OS === 'web' ? (
         <Text style={[styles.emptyText, isDark && styles.textLight]}>
-          El guardado local no está disponible en la versión Web por ahora.
+          {t('history.webNotAvailable')}
         </Text>
       ) : (
         <FlatList
@@ -105,7 +107,7 @@ export default function HistoryScreen() {
           contentContainerStyle={styles.listContent}
           ListEmptyComponent={
             <Text style={[styles.emptyText, isDark && styles.textLight]}>
-              No hay tiempos guardados en esta categoría.
+              {t('history.empty')}
             </Text>
           }
         />

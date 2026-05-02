@@ -2,13 +2,14 @@ import React, { useEffect } from 'react';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useColorScheme } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { initDB } from '../../src/database/db';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
+  const { t } = useTranslation();
 
   useEffect(() => {
-    // Declaramos una función asíncrona dentro del useEffect
     const setupDatabase = async () => {
       try {
         await initDB();
@@ -17,8 +18,6 @@ export default function TabLayout() {
         console.error("Error initializing DB:", e);
       }
     };
-
-    // La ejecutamos
     setupDatabase();
   }, []);
 
@@ -31,28 +30,28 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Timer',
+          title: t('tabs.timer'),
           tabBarIcon: ({ color }) => <Ionicons name="timer-outline" size={24} color={color} />,
         }}
       />
       <Tabs.Screen
         name="history"
         options={{
-          title: 'Historial',
+          title: t('tabs.history'),
           tabBarIcon: ({ color }) => <Ionicons name="list-outline" size={24} color={color} />,
         }}
       />
       <Tabs.Screen
         name="learn"
         options={{
-          title: 'Aprender',
+          title: t('tabs.learn'),
           tabBarIcon: ({ color }) => <Ionicons name="book-outline" size={24} color={color} />,
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
-          title: 'Perfil',
+          title: t('tabs.profile'),
           tabBarIcon: ({ color }) => <Ionicons name="person-outline" size={24} color={color} />,
         }}
       />
