@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, ScrollView, useColorScheme } from 'react-native';
+import { StyleSheet, Text, View, Pressable, ScrollView, useColorScheme, Platform } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -42,12 +42,14 @@ export default function ProfileScreen() {
         </Text>
         <View style={[styles.card, isDark && styles.cardDark]}>
           {LANGUAGES.map((lang, index) => (
-            <TouchableOpacity
+            <Pressable
               key={lang.code}
-              style={[
+              style={({ hovered, pressed }) => [
                 styles.langRow,
                 index < LANGUAGES.length - 1 && styles.langRowBorder,
                 isDark && styles.langRowBorderDark,
+                hovered && Platform.OS === 'web' && styles.langRowHovered,
+                pressed && styles.langRowPressed,
               ]}
               onPress={() => changeLanguage(lang.code)}
             >
@@ -58,7 +60,7 @@ export default function ProfileScreen() {
               {currentLang === lang.code && (
                 <Ionicons name="checkmark-circle" size={24} color="#007aff" />
               )}
-            </TouchableOpacity>
+            </Pressable>
           ))}
         </View>
       </View>
@@ -162,6 +164,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
     color: '#212529',
+  },
+  langRowHovered: {
+    backgroundColor: '#f1f3f5',
+  },
+  langRowPressed: {
+    opacity: 0.7,
   },
   infoRow: {
     flexDirection: 'row',

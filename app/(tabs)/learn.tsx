@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, useColorScheme } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, Pressable, useColorScheme, Platform } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { BasicTutorial } from '../../src/components/learning/BasicTutorial';
 import { CfopSection } from '../../src/components/learning/CfopSection';
@@ -37,14 +37,17 @@ export default function LearnScreen() {
         showsHorizontalScrollIndicator={false} 
         contentContainerStyle={styles.menuContent}
         style={styles.menuBar}
+        bounces={false}
       >
         {SECTIONS.map((section) => (
-          <TouchableOpacity
+          <Pressable
             key={section.key}
-            style={[
+            style={({ hovered, pressed }) => [
               styles.menuButton,
               isDark && styles.menuButtonDark,
               activeSection === section.key && styles.menuButtonActive,
+              hovered && Platform.OS === 'web' && styles.menuButtonHover,
+              pressed && styles.menuButtonPressed,
             ]}
             onPress={() => setActiveSection(section.key)}
           >
@@ -56,7 +59,7 @@ export default function LearnScreen() {
             ]}>
               {t(section.i18nKey)}
             </Text>
-          </TouchableOpacity>
+          </Pressable>
         ))}
       </ScrollView>
 
@@ -77,19 +80,21 @@ const styles = StyleSheet.create({
   },
   menuBar: {
     flexGrow: 0,
+    paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#e9ecef',
   },
   menuContent: {
     paddingHorizontal: 12,
-    paddingVertical: 12,
+    alignItems: 'center',
     gap: 8,
+    paddingRight: 12,
   },
   menuButton: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    height: 40,
     borderRadius: 20,
     backgroundColor: '#e9ecef',
     gap: 6,
@@ -99,6 +104,14 @@ const styles = StyleSheet.create({
   },
   menuButtonActive: {
     backgroundColor: '#007aff',
+  },
+  menuButtonHover: {
+    backgroundColor: '#dee2e6',
+    transform: [{ scale: 1.03 }],
+  },
+  menuButtonPressed: {
+    opacity: 0.8,
+    transform: [{ scale: 0.97 }],
   },
   menuEmoji: {
     fontSize: 16,

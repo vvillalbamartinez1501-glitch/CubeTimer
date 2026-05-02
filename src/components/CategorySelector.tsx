@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View, Modal, FlatList, TextInput, useColorScheme, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
+import { StyleSheet, Text, View, Modal, FlatList, TextInput, useColorScheme, Pressable, KeyboardAvoidingView, Platform } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { CATEGORIES, Category } from '../constants/categories';
 import { useAppStore } from '../store/useAppStore';
@@ -40,27 +40,38 @@ export const CategorySelector = () => {
   };
 
   const renderItem = ({ item }: { item: Category }) => (
-    <TouchableOpacity 
-      style={[styles.item, activeCategoryId === item.id && styles.itemSelected, isDark && styles.itemDark]} 
+    <Pressable 
+      style={({ hovered, pressed }) => [
+        styles.item, 
+        activeCategoryId === item.id && styles.itemSelected, 
+        isDark && styles.itemDark,
+        hovered && Platform.OS === 'web' && styles.itemHovered,
+        pressed && styles.itemPressed,
+      ]} 
       onPress={() => handleSelect(item)}
     >
       <Text style={[styles.itemText, isDark && styles.textDark, activeCategoryId === item.id && styles.textSelected]}>
         {item.name}
       </Text>
-    </TouchableOpacity>
+    </Pressable>
   );
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity 
-        style={[styles.selectorButton, isDark && styles.selectorButtonDark]} 
+      <Pressable 
+        style={({ hovered, pressed }) => [
+          styles.selectorButton, 
+          isDark && styles.selectorButtonDark,
+          hovered && Platform.OS === 'web' && styles.selectorButtonHovered,
+          pressed && styles.selectorButtonPressed,
+        ]} 
         onPress={() => setModalVisible(true)}
       >
         <Text style={[styles.selectorText, isDark && styles.textDark]}>
           {currentName}
         </Text>
         <Ionicons name="chevron-down" size={20} color={isDark ? '#fff' : '#000'} />
-      </TouchableOpacity>
+      </Pressable>
 
       <Modal
         animationType="slide"
@@ -80,9 +91,15 @@ export const CategorySelector = () => {
               <Text style={[styles.modalTitle, isDark && styles.textDark]}>
                 {t('categories.selectCube')}
               </Text>
-              <TouchableOpacity onPress={() => { setModalVisible(false); setShowCustomInput(false); }}>
+              <Pressable 
+                onPress={() => { setModalVisible(false); setShowCustomInput(false); }}
+                style={({ hovered, pressed }) => [
+                  hovered && Platform.OS === 'web' && { opacity: 0.7, transform: [{ scale: 1.1 }] },
+                  pressed && { opacity: 0.5, transform: [{ scale: 0.9 }] }
+                ]}
+              >
                 <Ionicons name="close" size={28} color={isDark ? '#fff' : '#000'} />
-              </TouchableOpacity>
+              </Pressable>
             </View>
 
             {showCustomInput ? (
@@ -98,9 +115,16 @@ export const CategorySelector = () => {
                   onChangeText={setTempCustomName}
                   autoFocus
                 />
-                <TouchableOpacity style={styles.confirmButton} onPress={confirmCustom}>
+                <Pressable 
+                  style={({ hovered, pressed }) => [
+                    styles.confirmButton,
+                    hovered && Platform.OS === 'web' && styles.confirmButtonHovered,
+                    pressed && styles.confirmButtonPressed,
+                  ]} 
+                  onPress={confirmCustom}
+                >
                   <Text style={styles.confirmButtonText}>{t('actions.confirm')}</Text>
-                </TouchableOpacity>
+                </Pressable>
               </View>
             ) : (
               <FlatList
@@ -138,6 +162,14 @@ const styles = StyleSheet.create({
   selectorText: {
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  selectorButtonHovered: {
+    backgroundColor: '#dee2e6',
+    transform: [{ scale: 1.05 }],
+  },
+  selectorButtonPressed: {
+    opacity: 0.7,
+    transform: [{ scale: 0.95 }],
   },
   modalOverlay: {
     flex: 1,
@@ -186,6 +218,12 @@ const styles = StyleSheet.create({
     color: '#007aff',
     fontWeight: 'bold',
   },
+  itemHovered: {
+    backgroundColor: '#f1f3f5',
+  },
+  itemPressed: {
+    opacity: 0.7,
+  },
   customContainer: {
     flex: 1,
     paddingTop: 20,
@@ -212,6 +250,14 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 8,
     alignItems: 'center',
+  },
+  confirmButtonHovered: {
+    backgroundColor: '#0062cc',
+    transform: [{ scale: 1.02 }],
+  },
+  confirmButtonPressed: {
+    opacity: 0.8,
+    transform: [{ scale: 0.98 }],
   },
   confirmButtonText: {
     color: '#fff',

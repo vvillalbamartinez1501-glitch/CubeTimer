@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { StyleSheet, Text, View, FlatList, TouchableOpacity, useColorScheme, Platform } from 'react-native';
+import { StyleSheet, Text, View, FlatList, Pressable, useColorScheme, Platform } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -71,9 +71,16 @@ export default function HistoryScreen() {
           <Text style={[styles.solveTime, isDark && styles.textDark]}>{formatTime(item.time)}</Text>
           <Text style={styles.solveDate}>{dateStr} {timeStr}</Text>
         </View>
-        <TouchableOpacity onPress={() => handleDelete(item.id)} style={styles.deleteButton}>
+        <Pressable 
+          onPress={() => handleDelete(item.id)} 
+          style={({ hovered, pressed }) => [
+            styles.deleteButton,
+            hovered && Platform.OS === 'web' && { opacity: 0.7, transform: [{ scale: 1.2 }] },
+            pressed && { opacity: 0.5, transform: [{ scale: 0.9 }] }
+          ]}
+        >
           <Ionicons name="trash-outline" size={24} color="#ff3b30" />
-        </TouchableOpacity>
+        </Pressable>
       </View>
     );
   };

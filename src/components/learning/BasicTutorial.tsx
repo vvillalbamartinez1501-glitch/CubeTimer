@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, useColorScheme } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, Pressable, useColorScheme, Platform } from 'react-native';
 import { basicTutorials, TutorialStep } from '../../constants/learningData';
 
 const CUBE_TABS = [
@@ -18,17 +18,22 @@ export const BasicTutorial = () => {
 
   return (
     <View style={styles.container}>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.subMenu}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.subMenu} contentContainerStyle={styles.subMenuContent}>
         {CUBE_TABS.map((tab) => (
-          <TouchableOpacity
+          <Pressable
             key={tab.key}
-            style={[styles.subTab, activeCube === tab.key && styles.subTabActive]}
+            style={({ hovered, pressed }) => [
+              styles.subTab, 
+              activeCube === tab.key && styles.subTabActive,
+              hovered && Platform.OS === 'web' && styles.subTabHovered,
+              pressed && styles.subTabPressed,
+            ]}
             onPress={() => setActiveCube(tab.key)}
           >
             <Text style={[styles.subTabText, activeCube === tab.key && styles.subTabTextActive]}>
               {tab.label}
             </Text>
-          </TouchableOpacity>
+          </Pressable>
         ))}
       </ScrollView>
 
@@ -55,16 +60,34 @@ const styles = StyleSheet.create({
     flexGrow: 0,
     paddingHorizontal: 16,
     paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e9ecef',
+    marginBottom: 4,
+  },
+  subMenuContent: {
+    alignItems: 'center',
+    gap: 8,
+    paddingRight: 16,
   },
   subTab: {
     paddingHorizontal: 16,
     paddingVertical: 8,
-    marginRight: 8,
     borderRadius: 16,
     backgroundColor: '#e9ecef',
+    height: 36,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   subTabActive: {
     backgroundColor: '#007aff',
+  },
+  subTabHovered: {
+    backgroundColor: '#dee2e6',
+    transform: [{ scale: 1.05 }],
+  },
+  subTabPressed: {
+    opacity: 0.7,
+    transform: [{ scale: 0.95 }],
   },
   subTabText: {
     fontSize: 14,

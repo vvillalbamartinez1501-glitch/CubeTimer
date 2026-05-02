@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { StyleSheet, Text, View, Pressable, useColorScheme, TouchableOpacity, Switch, Platform } from 'react-native';
+import { StyleSheet, Text, View, Pressable, useColorScheme, Switch, Platform } from 'react-native';
 import { useAppStore } from '../../src/store/useAppStore';
 import { CategorySelector } from '../../src/components/CategorySelector';
 import { saveSolve } from '../../src/database/operations';
@@ -201,17 +201,41 @@ export default function TimerScreen() {
         
         {timerState === 'finished' ? (
           <View style={styles.actionRow}>
-            <TouchableOpacity onPress={handleDiscard} style={[styles.actionButton, styles.buttonDelete]}>
+            <Pressable 
+              onPress={handleDiscard} 
+              style={({ hovered, pressed }) => [
+                styles.actionButton, 
+                styles.buttonDelete,
+                hovered && Platform.OS === 'web' && styles.buttonHovered,
+                pressed && styles.buttonPressed,
+              ]}
+            >
               <Ionicons name="trash" size={32} color="#fff" />
-            </TouchableOpacity>
+            </Pressable>
             
-            <TouchableOpacity onPress={handleAddTwo} style={[styles.actionButton, styles.buttonPenalty]}>
+            <Pressable 
+              onPress={handleAddTwo} 
+              style={({ hovered, pressed }) => [
+                styles.actionButton, 
+                styles.buttonPenalty,
+                hovered && Platform.OS === 'web' && styles.buttonHovered,
+                pressed && styles.buttonPressed,
+              ]}
+            >
               <Text style={styles.penaltyText}>+2s</Text>
-            </TouchableOpacity>
+            </Pressable>
             
-            <TouchableOpacity onPress={handleSave} style={[styles.actionButton, styles.buttonSave]}>
+            <Pressable 
+              onPress={handleSave} 
+              style={({ hovered, pressed }) => [
+                styles.actionButton, 
+                styles.buttonSave,
+                hovered && Platform.OS === 'web' && styles.buttonHovered,
+                pressed && styles.buttonPressed,
+              ]}
+            >
               <Ionicons name="checkmark" size={36} color="#fff" />
-            </TouchableOpacity>
+            </Pressable>
           </View>
         ) : (
           <View style={styles.instructionContainer}>
@@ -328,6 +352,15 @@ const styles = StyleSheet.create({
   },
   buttonSave: {
     backgroundColor: '#00C851',
+  },
+  buttonHovered: {
+    transform: [{ scale: 1.1 }],
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+  },
+  buttonPressed: {
+    transform: [{ scale: 0.9 }],
+    opacity: 0.8,
   },
   penaltyText: {
     color: '#fff',
