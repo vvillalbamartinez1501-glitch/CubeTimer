@@ -2,24 +2,14 @@ import React, { useState, useRef, useEffect } from 'react';
 import { StyleSheet, Text, View, Pressable, useColorScheme } from 'react-native';
 import { useAppStore } from '../../src/store/useAppStore';
 import { CategorySelector } from '../../src/components/CategorySelector';
-
-const formatTime = (timeInMillis: number) => {
-  const minutes = Math.floor(timeInMillis / 60000);
-  const seconds = Math.floor((timeInMillis % 60000) / 1000);
-  const centiseconds = Math.floor((timeInMillis % 1000) / 10);
-
-  const minsStr = minutes > 0 ? `${minutes}:` : '';
-  const secsStr = minutes > 0 ? seconds.toString().padStart(2, '0') : seconds.toString();
-  const msStr = centiseconds.toString().padStart(2, '0');
-
-  return `${minsStr}${secsStr}:${msStr}`; 
-};
+import { saveSolve } from '../../src/database/operations';
+import { formatTime } from '../../src/utils/timeFormat';
 
 export default function TimerScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   
-  const { currentScramble, generateNewScramble } = useAppStore();
+  const { currentScramble, generateNewScramble, activeUserId, activeCategoryId } = useAppStore();
   
   const [time, setTime] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
@@ -27,9 +17,9 @@ export default function TimerScreen() {
   const requestRef = useRef<number>();
   const startTimeRef = useRef<number>(0);
   
-  const handleSaveTime = (timeInMillis: number) => {
-    console.log('Tiempo a guardar:', formatTime(timeInMillis), '(', timeInMillis, 'ms)');
-    // TODO: SQLite
+  const handleSaveTime = async (timeInMillis: number) => {
+    // Guardar en la base de datos local SQLite
+    await saveSolve(activeUserId, activeCategoryId, timeInMillis, currentScramble);
   };
 
   const updateTime = () => {
@@ -65,7 +55,6 @@ export default function TimerScreen() {
 
   return (
     <View style={[styles.container, isDark && styles.containerDark]}>
-      {/* Al separar el área interactiva del selector del Pressable del timer, evitamos clics accidentales */}
       <View style={styles.topSection}>
         {!isRunning && <CategorySelector />}
         <View style={styles.scrambleContainer}>
