@@ -1,25 +1,14 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useColorScheme } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { initDB } from '../../src/database/db';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
   const { t } = useTranslation();
 
-  useEffect(() => {
-    const setupDatabase = async () => {
-      try {
-        await initDB();
-        console.log('Database initialized successfully');
-      } catch (e) {
-        console.error("Error initializing DB:", e);
-      }
-    };
-    setupDatabase();
-  }, []);
+
 
   return (
     <Tabs

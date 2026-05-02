@@ -1,87 +1,85 @@
-import * as SQLite from 'expo-sqlite';
-import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Definimos la estructura de cómo nos devolverá la base de datos un Solve
+// ─── Storage key ──────────────────────────────────────────────────────────────
+const STORAGE_KEY = '@cube_solves';
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 export interface SolveRecord {
   id: number;
   userId: number;
   categoryId: string;
-  time: number;
+  time: number;       // milliseconds
   scramble: string;
-  date: string;
+  date: string;       // ISO string
 }
 
-// 1. GUARDAR UN TIEMPO (Ya te la había pasado, la mantenemos aquí)
+// ─── Internal helper: load the full array ────────────────────────────────────
+const _loadAll = async (): Promise<SolveRecord[]> => {
+  try {
+    const raw = await AsyncStorage.getItem(STORAGE_KEY);
+    return raw ? (JSON.parse(raw) as SolveRecord[]) : [];
+  } catch {
+    return [];
+  }
+};
+
+// ─── Internal helper: persist the full array ─────────────────────────────────
+const _saveAll = async (solves: SolveRecord[]): Promise<void> => {
+  await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(solves));
+};
+
+// ─── 1. GUARDAR UN TIEMPO ─────────────────────────────────────────────────────
 export const saveSolve = async (
-  userId: number, 
-  categoryId: string, 
-  time: number, 
-  scramble: string
-) => {
-  if (Platform.OS === 'web') {
-    console.log('Guardado simulado en web (SQLite desactivado).');
-    return;
-  }
-
+  userId: number,
+  categoryId: string,
+  time: number,
+  scramble: string,
+): Promise<void> => {
   try {
-    const db = await SQLite.openDatabaseAsync('cubetimer.db');
-    const date = new Date().toISOString();
+    const all = await _loadAll();
 
-    await db.runAsync(
-      'INSERT INTO SolveRecords (userId, categoryId, time, scramble, date) VALUES (?, ?, ?, ?, ?)',
-      [userId, categoryId, time, scramble, date]
-    );
-    
-    console.log("¡Solve guardado en la base de datos correctamente!");
+    const newSolve: SolveRecord = {
+      id: Date.now(),          // unique enough for local storage
+      userId,
+      categoryId,
+      time,
+      scramble,
+      date: new Date().toISOString(),
+    };
+
+    all.push(newSolve);
+    await _saveAll(all);
+    console.log('✅ Solve guardado en AsyncStorage.');
   } catch (error) {
-    console.error("Error crítico al guardar:", error);
+    console.error('❌ Error al guardar solve:', error);
   }
 };
 
-// 2. OBTENER TODOS LOS TIEMPOS (Necesario para el Historial)
-// Permite filtrar por usuario y categoría. Ordena del más reciente al más antiguo.
+// ─── 2. OBTENER TIEMPOS (filtrado + orden desc) ───────────────────────────────
 export const getSolves = async (
-  userId: number, 
-  categoryId: string
+  userId: number,
+  categoryId: string,
 ): Promise<SolveRecord[]> => {
-  if (Platform.OS === 'web') {
-    console.log('Lectura simulada en web (Devolviendo array vacío).');
-    return [];
-  }
-
   try {
-    const db = await SQLite.openDatabaseAsync('cubetimer.db');
-    
-    // getAllAsync devuelve un array con todos los resultados
-    const result = await db.getAllAsync<SolveRecord>(
-      'SELECT * FROM SolveRecords WHERE userId = ? AND categoryId = ? ORDER BY id DESC',
-      [userId, categoryId]
-    );
-    
-    return result;
+    const all = await _loadAll();
+
+    return all
+      .filter(s => s.userId === userId && s.categoryId === categoryId)
+      .sort((a, b) => b.id - a.id); // más reciente primero (id = timestamp)
   } catch (error) {
-    console.error("Error al obtener los solves:", error);
+    console.error('❌ Error al obtener solves:', error);
     return [];
   }
 };
 
-// 3. ELIMINAR UN TIEMPO ESPECÍFICO (Necesario para la pantalla de Historial)
-export const deleteSolve = async (solveId: number) => {
-  if (Platform.OS === 'web') {
-    console.log(`Borrado simulado del solve ${solveId} en web.`);
-    return;
-  }
-
+// ─── 3. ELIMINAR UN TIEMPO ────────────────────────────────────────────────────
+export const deleteSolve = async (solveId: number): Promise<void> => {
   try {
-    const db = await SQLite.openDatabaseAsync('cubetimer.db');
-    
-    await db.runAsync(
-      'DELETE FROM SolveRecords WHERE id = ?',
-      [solveId]
-    );
-    
-    console.log(`Solve con ID ${solveId} eliminado correctamente.`);
+    const all = await _loadAll();
+    const filtered = all.filter(s => s.id !== solveId);
+    await _saveAll(filtered);
+    console.log(`🗑️ Solve ${solveId} eliminado de AsyncStorage.`);
   } catch (error) {
-    console.error(`Error al eliminar el solve ${solveId}:`, error);
+    console.error(`❌ Error al eliminar solve ${solveId}:`, error);
   }
 };
