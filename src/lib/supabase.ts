@@ -4,9 +4,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // ─── Env vars (replace or set in .env / Vercel dashboard) ────────────────────
 // In Expo, prefix with EXPO_PUBLIC_ to expose to the client bundle.
-const supabaseUrl  = process.env.EXPO_PUBLIC_SUPABASE_URL  ?? 'https://YOUR_PROJECT.supabase.co';
-const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? 'YOUR_ANON_KEY';
+const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
+const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '';
 
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error("❌ ERROR: Faltan las llaves de Supabase en el archivo .env");
+}
 // ─── Client ──────────────────────────────────────────────────────────────────
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
