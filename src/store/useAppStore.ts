@@ -1,14 +1,20 @@
 import { create } from 'zustand';
 import { generateScramble } from '../utils/scrambler';
+import type { User } from '@supabase/supabase-js';
 
 interface AppState {
+  // ── Timer ──
   activeUserId: number;
-  activeCategoryId: string; 
+  activeCategoryId: string;
   customCategoryName: string;
   currentScramble: string;
   generateNewScramble: () => void;
   setActiveCategory: (id: string, customName?: string) => void;
   setActiveUser: (id: number) => void;
+
+  // ── Auth ──
+  supabaseUser: User | null;
+  setSupabaseUser: (user: User | null) => void;
 }
 
 const isGenericScramble = (id: string) => {
@@ -16,29 +22,31 @@ const isGenericScramble = (id: string) => {
 };
 
 export const useAppStore = create<AppState>((set, get) => ({
-  activeUserId: 1, // Usuario predeterminado
-  activeCategoryId: '3x3', // Cubo predeterminado
+  // ── Timer defaults ──
+  activeUserId: 1,
+  activeCategoryId: '3x3',
   customCategoryName: '',
   currentScramble: generateScramble('3x3'),
-  
+
   generateNewScramble: () => {
     const { activeCategoryId } = get();
-    if (isGenericScramble(activeCategoryId)) {
-      set({ currentScramble: generateScramble('generic') });
-    } else {
-      set({ currentScramble: generateScramble(activeCategoryId) });
-    }
-  },
-  
-  setActiveCategory: (id: string, customName?: string) => {
-    set({ 
-      activeCategoryId: id,
-      customCategoryName: customName || ''
+    set({
+      currentScramble: generateScramble(
+        isGenericScramble(activeCategoryId) ? 'generic' : activeCategoryId,
+      ),
     });
+  },
+
+  setActiveCategory: (id: string, customName?: string) => {
+    set({ activeCategoryId: id, customCategoryName: customName || '' });
     get().generateNewScramble();
   },
 
   setActiveUser: (id: number) => {
     set({ activeUserId: id });
-  }
+  },
+
+  // ── Auth defaults ──
+  supabaseUser: null,
+  setSupabaseUser: (user) => set({ supabaseUser: user }),
 }));
