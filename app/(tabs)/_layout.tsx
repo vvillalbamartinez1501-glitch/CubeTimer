@@ -20,6 +20,7 @@ export default function TabLayout() {
         name="index"
         options={{
           title: t('tabs.timer'),
+          headerShown: false,
           tabBarIcon: ({ color }) => <Ionicons name="timer-outline" size={24} color={color} />,
         }}
       />

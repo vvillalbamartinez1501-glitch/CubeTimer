@@ -117,10 +117,17 @@ export default function TimerScreen() {
       {/* 1. HEADER (Top Bar) - OUTSIDE the main Pressable */}
       {timerState === 'idle' && (
         <View style={[styles.header, { paddingTop: Math.max(insets.top, 10) }]}>
-          {/* Izquierda: Logo y App Name */}
+          {/* Izquierda: Logo, App Name y Tab Name */}
           <View style={styles.headerLeft}>
-            <Ionicons name="cube-outline" size={28} color={isDark ? '#fff' : '#000'} />
-            <Text style={[styles.headerTitle, isDark && styles.textDark]}>CubeTimer</Text>
+            <View style={styles.logoTitleGroup}>
+              <Ionicons name="cube-outline" size={28} color={isDark ? '#fff' : '#000'} />
+              <Text style={[styles.headerTitle, isDark && styles.textDark]}>CubeTimer</Text>
+            </View>
+            <View style={styles.tabNameBadge}>
+              <Text style={[styles.tabNameText, isDark && styles.textDark]}>
+                {t('tabs.timer') || 'Timer'}
+              </Text>
+            </View>
           </View>
 
           {/* Centro: Selectores */}
@@ -257,12 +264,31 @@ const styles = StyleSheet.create({
   headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 12,
+  },
+  logoTitleGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 8,
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: '800',
     letterSpacing: 0.5,
+  },
+  tabNameBadge: {
+    backgroundColor: 'rgba(0,0,0,0.05)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderLeftWidth: 2,
+    borderLeftColor: '#007aff',
+  },
+  tabNameText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#666',
+    textTransform: 'uppercase',
   },
   headerCenter: {
     flexDirection: 'row',
