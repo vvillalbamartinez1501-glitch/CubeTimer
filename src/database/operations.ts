@@ -9,6 +9,7 @@ export interface SolveRecord {
   id: number;         // timestamp-based local ID (also used as remote idempotency key)
   userId: number;     // local numeric user ID (kept for backwards compat)
   categoryId: string;
+  sessionId: string;  // Added for session support
   time: number;       // milliseconds
   scramble: string;
   date: string;       // ISO string
@@ -36,6 +37,7 @@ export const saveSolve = async (
   categoryId: string,
   time: number,
   scramble: string,
+  sessionId: string, // New parameter
 ): Promise<void> => {
   const id = Date.now();
   const date = new Date().toISOString();
@@ -45,6 +47,7 @@ export const saveSolve = async (
     id,
     userId,
     categoryId,
+    sessionId,
     time,
     scramble,
     date,
@@ -60,6 +63,7 @@ export const saveSolve = async (
         id: id.toString(),          // uuid-compatible via text cast
         user_id: session.user.id,
         category: categoryId,
+        session_id: sessionId,
         time,
         scramble,
         created_at: date,
@@ -88,18 +92,24 @@ export const saveSolve = async (
 export const getSolves = async (
   userId: number,
   categoryId: string,
+  sessionId?: string, // Added parameter
 ): Promise<SolveRecord[]> => {
   try {
     const { data: { session } } = await supabase.auth.getSession();
 
     if (session) {
       // Fetch remote records
-      const { data: remote, error } = await supabase
+      let query = supabase
         .from('solves')
         .select('*')
         .eq('user_id', session.user.id)
-        .eq('category', categoryId)
-        .order('created_at', { ascending: false });
+        .eq('category', categoryId);
+      
+      if (sessionId) {
+        query = query.eq('session_id', sessionId);
+      }
+
+      const { data: remote, error } = await query.order('created_at', { ascending: false });
 
       if (!error && remote) {
         // Map Supabase rows → SolveRecord shape and persist locally
@@ -107,6 +117,7 @@ export const getSolves = async (
           id: Number(r.id) || new Date(r.created_at).getTime(),
           userId,
           categoryId: r.category,
+          sessionId: r.session_id || 'default',
           time: r.time,
           scramble: r.scramble,
           date: r.created_at,
@@ -116,7 +127,10 @@ export const getSolves = async (
         // Merge: keep local-only (unsynced) + remote (authoritative)
         const all = await _loadAll();
         const unsyncedLocal = all.filter(
-          s => s.userId === userId && s.categoryId === categoryId && !s.synced,
+          s => s.userId === userId && 
+               s.categoryId === categoryId && 
+               (!sessionId || s.sessionId === sessionId) &&
+               !s.synced,
         );
         const merged = [
           ...mapped,
@@ -125,7 +139,7 @@ export const getSolves = async (
 
         // Persist the merged set
         const otherSolves = all.filter(
-          s => !(s.userId === userId && s.categoryId === categoryId),
+          s => !(s.userId === userId && s.categoryId === categoryId && (!sessionId || s.sessionId === sessionId)),
         );
         await _saveAll([...otherSolves, ...merged]);
 
@@ -139,7 +153,11 @@ export const getSolves = async (
   // Offline / no session: return local only
   const all = await _loadAll();
   return all
-    .filter(s => s.userId === userId && s.categoryId === categoryId)
+    .filter(s => 
+      s.userId === userId && 
+      s.categoryId === categoryId && 
+      (!sessionId || s.sessionId === sessionId || (!s.sessionId && sessionId === 'default'))
+    )
     .sort((a, b) => b.id - a.id);
 };
 

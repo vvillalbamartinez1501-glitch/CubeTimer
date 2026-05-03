@@ -39,7 +39,7 @@ export default function TimerScreen() {
   const { t }       = useTranslation();
   const insets      = useSafeAreaInsets();
 
-  const { currentScramble, generateNewScramble, activeUserId, activeCategoryId } = useAppStore();
+  const { currentScramble, generateNewScramble, activeUserId, activeCategoryId, activeSessionId } = useAppStore();
   const { updateStreak, checkAchievements } = useGamificationStore();
 
   const [isInspectionEnabled, setIsInspectionEnabled] = useState(false);
@@ -48,16 +48,16 @@ export default function TimerScreen() {
   // ─── Fetch Solves ───────────────────────────────────────────────────────────
   const fetchHistory = useCallback(async () => {
     try {
-      const data = await getSolves(activeUserId, activeCategoryId);
+      const data = await getSolves(activeUserId, activeCategoryId, activeSessionId);
       setSolves(data);
     } catch (e) {
       console.warn('[Timer] Fetch history error:', e);
     }
-  }, [activeUserId, activeCategoryId]);
+  }, [activeUserId, activeCategoryId, activeSessionId]);
 
   React.useEffect(() => {
     fetchHistory();
-  }, [fetchHistory]);
+  }, [fetchHistory, activeSessionId]);
 
   // ─── Custom Hook para el Cronómetro (Lógica centralizada) ──────────────────
   const {
@@ -87,7 +87,7 @@ export default function TimerScreen() {
 
     const persist = async () => {
       try {
-        await saveSolve(activeUserId, activeCategoryId, timeToSave, scrambleToSave);
+        await saveSolve(activeUserId, activeCategoryId, timeToSave, scrambleToSave, activeSessionId);
         updateStreak();
         fetchHistory();
         const [total, catTotal] = await Promise.all([
@@ -101,7 +101,7 @@ export default function TimerScreen() {
       }
     };
     persist();
-  }, [displayTime, currentScramble, activeUserId, activeCategoryId, handleDiscard, updateStreak, checkAchievements, fetchHistory]);
+  }, [displayTime, currentScramble, activeUserId, activeCategoryId, activeSessionId, handleDiscard, updateStreak, checkAchievements, fetchHistory]);
 
   const handleDelete = useCallback(async (id: number) => {
     Alert.alert(

@@ -21,11 +21,11 @@ export default function HistoryScreen() {
   const isDark = colorScheme === 'dark';
   const { t } = useTranslation();
   
-  const { activeUserId, activeCategoryId } = useAppStore();
+  const { activeUserId, activeCategoryId, activeSessionId } = useAppStore();
   const [solves, setSolves] = useState<SolveRecord[]>([]);
 
   const fetchSolves = async () => {
-    const data = await getSolves(activeUserId, activeCategoryId);
+    const data = await getSolves(activeUserId, activeCategoryId, activeSessionId);
     if (data) {
       setSolves(data as SolveRecord[]);
     }
@@ -36,7 +36,7 @@ export default function HistoryScreen() {
   useFocusEffect(
     useCallback(() => {
       fetchSolves();
-    }, [activeUserId, activeCategoryId])
+    }, [activeUserId, activeCategoryId, activeSessionId])
   );
 
   const handleDelete = useCallback(async (id: number) => {

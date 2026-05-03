@@ -130,18 +130,18 @@ export default function StatsScreen() {
   const isDark = colorScheme === 'dark';
   const { t } = useTranslation();
 
-  const { activeUserId, activeCategoryId } = useAppStore();
+  const { activeUserId, activeCategoryId, activeSessionId } = useAppStore();
   const [solves, setSolves] = useState<SolveRecord[]>([]);
   const [activeLinePoint, setActiveLinePoint] = useState<{ value: number; index: number } | null>(null);
 
   // Fetch solves when screen focused or category changes
   useFocusEffect(
     useCallback(() => {
-      getSolves(activeUserId, activeCategoryId).then(data => {
+      getSolves(activeUserId, activeCategoryId, activeSessionId).then(data => {
         setSolves(data ?? []);
         setActiveLinePoint(null);
       });
-    }, [activeUserId, activeCategoryId])
+    }, [activeUserId, activeCategoryId, activeSessionId])
   );
 
   // ─── Derived data ──────────────────────────────────────────────────────────

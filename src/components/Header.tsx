@@ -1,9 +1,10 @@
-import React from 'react';
-import { StyleSheet, Text, View, Pressable, useColorScheme } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, Text, View, Pressable, useColorScheme, Modal, TextInput, FlatList, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { CategorySelector } from './CategorySelector';
+import { useAppStore } from '../store/useAppStore';
 
 interface HeaderProps {
   titleKey: string;
@@ -14,6 +15,50 @@ export const Header: React.FC<HeaderProps> = ({ titleKey }) => {
   const isDark = colorScheme === 'dark';
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+
+  const { 
+    sessions, activeSessionId, activeCategoryId,
+    loadSessions, createSession, renameSession, deleteSession, setActiveSession 
+  } = useAppStore();
+
+  const [modalVisible, setModalVisible] = useState(false);
+  const [newSessionName, setNewSessionName] = useState('');
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState('');
+
+  useEffect(() => {
+    loadSessions();
+  }, []);
+
+  const currentSession = sessions.find(s => s.id === activeSessionId) || sessions.find(s => s.categoryId === activeCategoryId);
+  const categorySessions = sessions.filter(s => s.categoryId === activeCategoryId);
+
+  const handleCreate = () => {
+    if (!newSessionName.trim()) return;
+    createSession(newSessionName.trim());
+    setNewSessionName('');
+  };
+
+  const handleRename = (id: string) => {
+    if (!editName.trim()) return;
+    renameSession(id, editName.trim());
+    setEditingId(null);
+  };
+
+  const handleDelete = (id: string) => {
+    if (categorySessions.length <= 1) {
+      Alert.alert('Error', 'No puedes eliminar la última sesión de esta categoría.');
+      return;
+    }
+    Alert.alert(
+      'Eliminar sesión',
+      '¿Estás seguro? Todos los tiempos de esta sesión se ocultarán del historial actual.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Eliminar', style: 'destructive', onPress: () => deleteSession(id) }
+      ]
+    );
+  };
 
   return (
     <View style={[styles.header, { paddingTop: Math.max(insets.top, 10) }]}>
@@ -32,8 +77,13 @@ export const Header: React.FC<HeaderProps> = ({ titleKey }) => {
 
       {/* Centro: Selectores */}
       <View style={styles.headerCenter}>
-        <Pressable style={[styles.sessionPill, isDark && styles.sessionPillDark]}>
-          <Text style={[styles.sessionPillText, isDark && styles.textDark]}>Sesión 1</Text>
+        <Pressable 
+          style={[styles.sessionPill, isDark && styles.sessionPillDark]}
+          onPress={() => setModalVisible(true)}
+        >
+          <Text style={[styles.sessionPillText, isDark && styles.textDark]}>
+            {currentSession?.name || 'Sesión 1'}
+          </Text>
           <Ionicons name="chevron-down" size={14} color={isDark ? '#aaa' : '#666'} />
         </Pressable>
         <View style={{ zIndex: 100 }}>
@@ -50,6 +100,75 @@ export const Header: React.FC<HeaderProps> = ({ titleKey }) => {
           <Ionicons name="person-outline" size={24} color={isDark ? '#fff' : '#000'} />
         </Pressable>
       </View>
+
+      {/* Modal de Sesiones */}
+      <Modal
+        visible={modalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <Pressable style={styles.modalOverlay} onPress={() => setModalVisible(false)}>
+          <View style={[styles.modalContent, isDark && styles.modalContentDark]}>
+            <Text style={[styles.modalTitle, isDark && styles.textDark]}>Gestionar Sesiones ({activeCategoryId})</Text>
+            
+            <FlatList
+              data={categorySessions}
+              keyExtractor={item => item.id}
+              style={{ maxHeight: 300, width: '100%' }}
+              renderItem={({ item }) => (
+                <View style={styles.sessionItem}>
+                  {editingId === item.id ? (
+                    <TextInput
+                      style={[styles.editInput, isDark && styles.textDark]}
+                      value={editName}
+                      onChangeText={setEditName}
+                      autoFocus
+                      onBlur={() => handleRename(item.id)}
+                      onSubmitEditing={() => handleRename(item.id)}
+                    />
+                  ) : (
+                    <Pressable 
+                      style={styles.sessionSelect} 
+                      onPress={() => { setActiveSession(item.id); setModalVisible(false); }}
+                    >
+                      <Text style={[
+                        styles.sessionName, 
+                        isDark && styles.textDark,
+                        activeSessionId === item.id && styles.activeSessionText
+                      ]}>
+                        {item.name}
+                      </Text>
+                    </Pressable>
+                  )}
+                  
+                  <View style={styles.sessionActions}>
+                    <Pressable onPress={() => { setEditingId(item.id); setEditName(item.name); }}>
+                      <Ionicons name="pencil-outline" size={18} color="#007aff" />
+                    </Pressable>
+                    <Pressable onPress={() => handleDelete(item.id)}>
+                      <Ionicons name="trash-outline" size={18} color="#ff3b30" />
+                    </Pressable>
+                  </View>
+                </View>
+              )}
+            />
+
+            <View style={styles.addSessionRow}>
+              <TextInput
+                style={[styles.addInput, isDark && styles.addInputDark, isDark && styles.textDark]}
+                placeholder="Nueva Sesión..."
+                placeholderTextColor="#999"
+                value={newSessionName}
+                onChangeText={setNewSessionName}
+              />
+              <Pressable style={styles.addButton} onPress={handleCreate}>
+                <Ionicons name="add" size={24} color="#fff" />
+              </Pressable>
+            </View>
+          </View>
+        </Pressable>
+      </Modal>
     </View>
   );
 };
@@ -123,5 +242,87 @@ const styles = StyleSheet.create({
   },
   textDark: {
     color: '#f8f9fa',
+  },
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: '85%',
+    backgroundColor: '#fff',
+    borderRadius: 24,
+    padding: 24,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.25,
+    shadowRadius: 15,
+    elevation: 10,
+  },
+  modalContentDark: {
+    backgroundColor: '#1e1e2e',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    marginBottom: 20,
+  },
+  sessionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#eee',
+    width: '100%',
+  },
+  sessionSelect: {
+    flex: 1,
+  },
+  sessionName: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  activeSessionText: {
+    color: '#007aff',
+    fontWeight: '800',
+  },
+  sessionActions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  editInput: {
+    flex: 1,
+    fontSize: 16,
+    padding: 0,
+    fontWeight: '600',
+  },
+  addSessionRow: {
+    flexDirection: 'row',
+    marginTop: 20,
+    gap: 10,
+    width: '100%',
+  },
+  addInput: {
+    flex: 1,
+    backgroundColor: '#f1f3f5',
+    borderRadius: 12,
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    fontSize: 14,
+  },
+  addInputDark: {
+    backgroundColor: '#2a2a3e',
+  },
+  addButton: {
+    backgroundColor: '#007aff',
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
