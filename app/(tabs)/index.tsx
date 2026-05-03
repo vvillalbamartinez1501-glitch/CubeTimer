@@ -284,19 +284,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   sidebar: {
-    width: 120,
+    width: 180,
     backgroundColor: 'rgba(0,0,0,0.02)',
     borderRightWidth: 1,
     borderRightColor: 'rgba(0,0,0,0.05)',
     paddingTop: 10,
-    paddingHorizontal: 10,
+    paddingHorizontal: 15,
   },
   sidebarDark: {
     backgroundColor: 'rgba(255,255,255,0.02)',
     borderRightColor: 'rgba(255,255,255,0.05)',
   },
   sidebarTitle: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '800',
     color: '#868e96',
     textTransform: 'uppercase',
@@ -315,13 +315,13 @@ const styles = StyleSheet.create({
     borderBottomColor: 'rgba(0,0,0,0.05)',
   },
   solveIndex: {
-    fontSize: 10,
+    fontSize: 12,
     color: '#adb5bd',
     fontWeight: '600',
   },
   solveTime: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: '700',
     color: '#495057',
   },
   sidebarDeleteBtn: {
