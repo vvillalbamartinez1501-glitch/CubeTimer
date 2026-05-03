@@ -242,6 +242,15 @@ export default function TimerScreen() {
               <Text style={[styles.scrambleText, isDark && styles.textDark]}>
                 {currentScramble}
               </Text>
+              <Pressable 
+                onPress={() => generateNewScramble()} 
+                style={({ pressed }) => [
+                  styles.refreshButton,
+                  pressed && { opacity: 0.6, transform: [{ scale: 0.9 }] }
+                ]}
+              >
+                <Ionicons name="refresh-outline" size={24} color={isDark ? "#adb5bd" : "#868e96"} />
+              </Pressable>
             </View>
           )}
 
@@ -402,18 +411,25 @@ const styles = StyleSheet.create({
   
   // Scramble Area
   scrambleArea: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 10,
+    paddingHorizontal: 40,
+    paddingTop: 15,
     zIndex: 10,
+    gap: 10,
   },
   scrambleText: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '700',
     textAlign: 'center',
     color: '#343a40',
-    lineHeight: 30,
+    lineHeight: 28,
+    flexShrink: 1,
+  },
+  refreshButton: {
+    padding: 8,
+    borderRadius: 20,
   },
 
   // Timer Area
