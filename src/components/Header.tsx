@@ -109,7 +109,10 @@ export const Header: React.FC<HeaderProps> = ({ titleKey }) => {
         onRequestClose={() => setModalVisible(false)}
       >
         <Pressable style={styles.modalOverlay} onPress={() => setModalVisible(false)}>
-          <View style={[styles.modalContent, isDark && styles.modalContentDark]}>
+          <Pressable 
+            style={[styles.modalContent, isDark && styles.modalContentDark]}
+            onPress={() => {}} // Intercepta el toque para que no se cierre
+          >
             <Text style={[styles.modalTitle, isDark && styles.textDark]}>Gestionar Sesiones ({activeCategoryId})</Text>
             
             <FlatList
@@ -166,7 +169,7 @@ export const Header: React.FC<HeaderProps> = ({ titleKey }) => {
                 <Ionicons name="add" size={24} color="#fff" />
               </Pressable>
             </View>
-          </View>
+          </Pressable>
         </Pressable>
       </Modal>
     </View>
