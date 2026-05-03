@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useRouter } from 'expo-router';
 import {
   Alert,
   Pressable,
@@ -42,7 +43,7 @@ export default function TimerScreen() {
 
   const { 
     currentScramble, generateNewScramble, activeUserId, activeCategoryId, 
-    activeSessionId, previousSessionId, setActiveSession 
+    activeSessionId, previousSessionId, setActiveSession, supabaseUser
   } = useAppStore();
   const { updateStreak, checkAchievements } = useGamificationStore();
 
@@ -212,12 +213,14 @@ export default function TimerScreen() {
           <View style={[styles.sidebar, isDark && styles.sidebarDark]}>
             <View style={styles.sidebarHeader}>
               <Text style={[styles.sidebarTitle, isDark && styles.textDark]}>Historial</Text>
-              <Pressable onPress={handleClearSession} style={styles.clearSessionBtn}>
-                <Ionicons name="trash" size={16} color="#ff3b30" />
-              </Pressable>
+              {supabaseUser && (
+                <Pressable onPress={handleClearSession} style={styles.clearSessionBtn}>
+                  <Ionicons name="trash" size={16} color="#ff3b30" />
+                </Pressable>
+              )}
             </View>
             <View style={styles.solvesList}>
-              {solves.slice(0, 20).map((solve, index) => (
+              {solves.slice(0, 15).map((solve, index) => (
                 <View key={solve.id} style={styles.solveItem}>
                   <Text style={styles.solveIndex}>{solves.length - index}</Text>
                   <Text style={[styles.solveTime, isDark && styles.textDark]}>
@@ -230,6 +233,18 @@ export default function TimerScreen() {
               ))}
               {solves.length === 0 && (
                 <Text style={styles.noSolvesText}>Sin tiempos</Text>
+              )}
+              
+              {!supabaseUser && (
+                <Pressable 
+                  style={[styles.sidebarLoginPrompt, isDark && styles.sidebarLoginPromptDark]}
+                  onPress={() => router.push('/(tabs)/profile')}
+                >
+                  <Ionicons name="cloud-upload-outline" size={14} color={isDark ? '#4dabf7' : '#228be6'} />
+                  <Text style={[styles.sidebarLoginPromptText, isDark && styles.textDark]}>
+                    Sincronizar
+                  </Text>
+                </Pressable>
               )}
             </View>
           </View>
@@ -515,5 +530,22 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 6,
     marginVertical: 10,
+  },
+  sidebarLoginPrompt: {
+    marginTop: 15,
+    padding: 10,
+    backgroundColor: 'rgba(0,122,255,0.05)',
+    borderRadius: 12,
+    alignItems: 'center',
+    gap: 6,
+  },
+  sidebarLoginPromptDark: {
+    backgroundColor: 'rgba(77,171,247,0.1)',
+  },
+  sidebarLoginPromptText: {
+    fontSize: 10,
+    fontWeight: '600',
+    textAlign: 'center',
+    opacity: 0.8,
   },
 });

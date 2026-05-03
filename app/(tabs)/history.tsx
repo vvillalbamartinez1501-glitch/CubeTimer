@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { StyleSheet, Text, View, FlatList, Pressable, useColorScheme, Platform, Alert } from 'react-native';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useAppStore } from '../../src/store/useAppStore';
@@ -138,10 +138,29 @@ export default function HistoryScreen() {
     );
   }, [isDark, handleDelete]);
 
+  const supabaseUser = useAppStore(s => s.supabaseUser);
+  const router = useRouter();
+
   return (
     <View style={[styles.container, isDark && styles.containerDark]}>
       <Header titleKey="tabs.history" />
       
+      {!supabaseUser && (
+        <Pressable 
+          style={[styles.syncBanner, isDark && styles.syncBannerDark]}
+          onPress={() => router.push('/(tabs)/profile')}
+        >
+          <View style={styles.syncBannerIcon}>
+            <Ionicons name="cloud-upload" size={20} color="#fff" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.syncBannerTitle}>Tus tiempos solo están en este dispositivo</Text>
+            <Text style={styles.syncBannerSubtitle}>Inicia sesión para guardarlos en la nube</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={isDark ? '#4dabf7' : '#007aff'} />
+        </Pressable>
+      )}
+
       <View style={[styles.statsContainer, isDark && styles.statsContainerDark]}>
         <View style={styles.statsHeader}>
           <Text style={styles.statsTitle}>Stats de Sesión</Text>
@@ -161,23 +180,17 @@ export default function HistoryScreen() {
         </View>
       </View>
 
-      {Platform.OS === 'web' ? (
-        <Text style={[styles.emptyText, isDark && styles.textLight]}>
-          {t('history.webNotAvailable')}
-        </Text>
-      ) : (
-        <FlatList
-          data={solves}
-          keyExtractor={item => item.id.toString()}
-          renderItem={renderItem}
-          contentContainerStyle={styles.listContent}
-          ListEmptyComponent={
-            <Text style={[styles.emptyText, isDark && styles.textLight]}>
-              {t('history.empty')}
-            </Text>
-          }
-        />
-      )}
+      <FlatList
+        data={solves}
+        keyExtractor={item => item.id.toString()}
+        renderItem={renderItem}
+        contentContainerStyle={styles.listContent}
+        ListEmptyComponent={
+          <Text style={[styles.emptyText, isDark && styles.textLight]}>
+            {t('history.empty')}
+          </Text>
+        }
+      />
     </View>
   );
 }
@@ -286,5 +299,44 @@ const styles = StyleSheet.create({
     color: '#868e96',
     fontSize: 16,
     paddingHorizontal: 20,
+  },
+  syncBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    margin: 16,
+    padding: 16,
+    borderRadius: 20,
+    gap: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.02)',
+  },
+  syncBannerDark: {
+    backgroundColor: '#1e1e2e',
+    borderColor: 'rgba(255,255,255,0.05)',
+  },
+  syncBannerIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: '#007aff',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  syncBannerTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#212529',
+    marginBottom: 2,
+  },
+  syncBannerSubtitle: {
+    fontSize: 12,
+    color: '#868e96',
+    fontWeight: '500',
   },
 });

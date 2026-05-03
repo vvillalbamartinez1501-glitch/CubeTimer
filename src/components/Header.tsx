@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { StyleSheet, Text, View, Pressable, useColorScheme, Modal, TextInput, FlatList, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -20,17 +20,13 @@ export const Header: React.FC<HeaderProps> = ({ titleKey }) => {
 
   const { 
     sessions, activeSessionId, activeCategoryId,
-    loadSessions, createSession, renameSession, deleteSession, setActiveSession 
+    createSession, renameSession, deleteSession, setActiveSession 
   } = useAppStore();
 
   const [modalVisible, setModalVisible] = useState(false);
   const [newSessionName, setNewSessionName] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
-
-  useEffect(() => {
-    loadSessions();
-  }, []);
 
   const currentSession = sessions.find(s => s.id === activeSessionId) || sessions.find(s => s.categoryId === activeCategoryId);
   const categorySessions = sessions.filter(s => s.categoryId === activeCategoryId);

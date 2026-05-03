@@ -7,10 +7,11 @@ import {
   Dimensions,
   useColorScheme,
 } from 'react-native';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { LineChart, BarChart } from 'react-native-chart-kit';
+import { Pressable } from 'react-native';
 import { useAppStore } from '../../src/store/useAppStore';
 import { getSolves, SolveRecord } from '../../src/database/operations';
 import { formatTime } from '../../src/utils/timeFormat';
@@ -166,6 +167,9 @@ export default function StatsScreen() {
     decimalPlaces: 0,
   };
 
+  const supabaseUser = useAppStore(s => s.supabaseUser);
+  const router = useRouter();
+
   return (
     <View style={{ flex: 1, backgroundColor: bg }}>
       <Header titleKey="tabs.stats" />
@@ -174,6 +178,22 @@ export default function StatsScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
+        {!supabaseUser && (
+          <Pressable 
+            style={[styles.syncBanner, { backgroundColor: isDark ? '#1e1e2e' : '#fff' }]}
+            onPress={() => router.push('/(tabs)/profile')}
+          >
+            <View style={[styles.syncBannerIcon, { backgroundColor: '#37b24d' }]}>
+              <Ionicons name="cloud-upload" size={20} color="#fff" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.syncBannerTitle, { color: textPrimary }]}>Sincroniza tus estadísticas</Text>
+              <Text style={[styles.syncBannerSubtitle, { color: textSecondary }]}>Inicia sesión para verlas en cualquier lugar</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={isDark ? '#4dabf7' : '#228be6'} />
+          </Pressable>
+        )}
+
         {solves.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyEmoji}>🏆</Text>
@@ -332,9 +352,38 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   emptySubtitle: {
-    fontSize: 14,
-    color: '#868e96',
+    fontSize: 16,
     textAlign: 'center',
-    lineHeight: 20,
+    paddingHorizontal: 40,
+    marginTop: 8,
+    opacity: 0.7,
+  },
+  syncBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+    padding: 16,
+    borderRadius: 20,
+    gap: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 3,
+  },
+  syncBannerIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  syncBannerTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  syncBannerSubtitle: {
+    fontSize: 12,
   },
 });

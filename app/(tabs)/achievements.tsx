@@ -10,7 +10,7 @@ import {
   Pressable,
   Alert,
 } from 'react-native';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { Header } from '../../src/components/Header';
@@ -138,6 +138,8 @@ export default function AchievementsScreen() {
   const isDark = colorScheme === 'dark';
   const { t } = useTranslation();
   const { streak, achievements } = useGamificationStore();
+  const supabaseUser = useAppStore(s => s.supabaseUser);
+  const router = useRouter();
 
   const unlockedCount = useMemo(() => achievements.filter(a => a.unlockedAt).length, [achievements]);
   
@@ -155,6 +157,22 @@ export default function AchievementsScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
+        {!supabaseUser && (
+          <Pressable 
+            style={[styles.syncBanner, { backgroundColor: cardBg }]}
+            onPress={() => router.push('/(tabs)/profile')}
+          >
+            <View style={[styles.syncBannerIcon, { backgroundColor: '#ffd700' }]}>
+              <Ionicons name="cloud-upload" size={20} color="#fff" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.syncBannerTitle, { color: textPrimary }]}>Protege tus logros</Text>
+              <Text style={[styles.syncBannerSubtitle, { color: textSecondary }]}>Inicia sesión para sincronizar tus trofeos</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={isDark ? '#4dabf7' : '#228be6'} />
+          </Pressable>
+        )}
+
         {/* Streak & Stats Header */}
         <View style={[styles.statsCard, { backgroundColor: cardBg }]}>
           <View style={styles.statMain}>
@@ -265,4 +283,32 @@ const styles = StyleSheet.create({
   },
   achTitle: { fontSize: 11, fontWeight: '800', textAlign: 'center', marginBottom: 2 },
   achDesc: { fontSize: 9, textAlign: 'center', lineHeight: 12 },
+  syncBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+    padding: 16,
+    borderRadius: 20,
+    gap: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 3,
+  },
+  syncBannerIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  syncBannerTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  syncBannerSubtitle: {
+    fontSize: 12,
+  },
 });
