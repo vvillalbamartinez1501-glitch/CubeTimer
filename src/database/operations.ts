@@ -186,6 +186,39 @@ export const deleteSolve = async (solveId: number): Promise<void> => {
   console.log(`🗑️ Solve ${solveId} eliminado de AsyncStorage.`);
 };
 
+// ─── ELIMINAR TODA UNA SESIÓN ────────────────────────────────────────────────
+export const clearSessionSolves = async (
+  userId: number,
+  categoryId: string,
+  sessionId: string,
+): Promise<void> => {
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+
+    if (session) {
+      const { error } = await supabase
+        .from('solves')
+        .delete()
+        .eq('user_id', session.user.id)
+        .eq('category', categoryId)
+        .eq('session_id', sessionId);
+
+      if (error) console.warn('⚠️ Error al borrar sesión en Supabase:', error.message);
+      else console.log('☁️ Sesión eliminada de Supabase.');
+    }
+  } catch (networkErr) {
+    console.warn('⚠️ Error de red al borrar sesión:', networkErr);
+  }
+
+  // Always delete locally
+  const all = await _loadAll();
+  const filtered = all.filter(s => 
+    !(s.userId === userId && s.categoryId === categoryId && s.sessionId === sessionId)
+  );
+  await _saveAll(filtered);
+  console.log(`🗑️ Sesión ${sessionId} eliminada de AsyncStorage.`);
+};
+
 // ─── 4. TOTAL SOLVES (for achievements) ──────────────────────────────────────
 export const getTotalSolves = async (userId: number): Promise<number> => {
   const all = await _loadAll();

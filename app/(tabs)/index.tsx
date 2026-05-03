@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CategorySelector } from '../../src/components/CategorySelector';
-import { getCategorySolveCount, getSolves, getTotalSolves, saveSolve, deleteSolve } from '../../src/database/operations';
+import { getCategorySolveCount, getSolves, getTotalSolves, saveSolve, deleteSolve, clearSessionSolves } from '../../src/database/operations';
 import { useSpeedTimer } from '../../src/hooks/useSpeedTimer';
 import { useGamificationStore } from '../../src/store/gamificationStore';
 import { Header } from '../../src/components/Header';
@@ -126,6 +126,31 @@ export default function TimerScreen() {
     );
   }, [t, fetchHistory]);
 
+  const handleClearSession = useCallback(() => {
+    if (solves.length === 0) return;
+    
+    Alert.alert(
+      t('history.clearSessionTitle') || '¿Vaciar sesión?',
+      t('history.clearSessionMsg') || '¿Estás seguro de que quieres eliminar TODOS los tiempos de esta sesión? Esta acción no se puede deshacer.',
+      [
+        { text: t('actions.cancel'), style: 'cancel' },
+        { 
+          text: t('actions.delete'), 
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await clearSessionSolves(activeUserId, activeCategoryId, activeSessionId);
+              fetchHistory();
+              Alert.alert(t('actions.success'), t('history.sessionCleared') || 'Sesión vaciada correctamente');
+            } catch (e) {
+              Alert.alert('Error', 'No se pudo vaciar la sesión');
+            }
+          }
+        },
+      ]
+    );
+  }, [t, solves, activeUserId, activeCategoryId, activeSessionId, fetchHistory]);
+
   // ─── Visuales ───────────────────────────────────────────────────────────────
   const timerColor = useMemo(() => {
     if (timerState === 'holding') return '#00C851';
@@ -162,7 +187,12 @@ export default function TimerScreen() {
         {/* SIDEBAR: History */}
         {timerState === 'idle' && (
           <View style={[styles.sidebar, isDark && styles.sidebarDark]}>
-            <Text style={[styles.sidebarTitle, isDark && styles.textDark]}>Historial</Text>
+            <View style={styles.sidebarHeader}>
+              <Text style={[styles.sidebarTitle, isDark && styles.textDark]}>Historial</Text>
+              <Pressable onPress={handleClearSession} style={styles.clearSessionBtn}>
+                <Ionicons name="trash" size={16} color="#ff3b30" />
+              </Pressable>
+            </View>
             <View style={styles.solvesList}>
               {solves.slice(0, 20).map((solve, index) => (
                 <View key={solve.id} style={styles.solveItem}>
@@ -300,8 +330,17 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#868e96',
     textTransform: 'uppercase',
-    marginBottom: 10,
     textAlign: 'center',
+  },
+  sidebarHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+    paddingHorizontal: 5,
+  },
+  clearSessionBtn: {
+    padding: 4,
   },
   solvesList: {
     flex: 1,

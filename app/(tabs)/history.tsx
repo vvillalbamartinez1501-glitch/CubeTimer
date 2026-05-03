@@ -1,10 +1,10 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { StyleSheet, Text, View, FlatList, Pressable, useColorScheme, Platform } from 'react-native';
+import { StyleSheet, Text, View, FlatList, Pressable, useColorScheme, Platform, Alert } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useAppStore } from '../../src/store/useAppStore';
-import { getSolves, deleteSolve } from '../../src/database/operations';
+import { getSolves, deleteSolve, clearSessionSolves } from '../../src/database/operations';
 import { formatTime } from '../../src/utils/timeFormat';
 import { CategorySelector } from '../../src/components/CategorySelector';
 import { Header } from '../../src/components/Header';
@@ -65,6 +65,31 @@ export default function HistoryScreen() {
     );
   }, [t]);
 
+  const handleClearSession = useCallback(() => {
+    if (solves.length === 0) return;
+
+    Alert.alert(
+      t('history.clearSessionTitle') || '¿Vaciar sesión?',
+      t('history.clearSessionMsg') || '¿Estás seguro de que quieres eliminar TODOS los tiempos de esta sesión? Esta acción no se puede deshacer.',
+      [
+        { text: t('actions.cancel'), style: 'cancel' },
+        { 
+          text: t('actions.delete'), 
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await clearSessionSolves(activeUserId, activeCategoryId, activeSessionId);
+              setSolves([]);
+              Alert.alert(t('actions.success'), t('history.sessionCleared') || 'Sesión vaciada correctamente');
+            } catch (e) {
+              Alert.alert('Error', 'No se pudo vaciar la sesión');
+            }
+          }
+        },
+      ]
+    );
+  }, [t, solves, activeUserId, activeCategoryId, activeSessionId]);
+
   // ── useMemo: solo se recalcula cuando cambia la lista de solves ───────────
   const bestTime = useMemo(() => {
     if (solves.length === 0) return '--';
@@ -109,13 +134,21 @@ export default function HistoryScreen() {
       <Header titleKey="tabs.history" />
       
       <View style={[styles.statsContainer, isDark && styles.statsContainerDark]}>
-        <View style={styles.statBox}>
-          <Text style={styles.statLabel}>{t('history.bestTime')}</Text>
-          <Text style={[styles.statValue, isDark && styles.textDark]}>{bestTime}</Text>
+        <View style={styles.statsHeader}>
+          <Text style={styles.statsTitle}>Stats de Sesión</Text>
+          <Pressable onPress={handleClearSession} style={styles.clearButton}>
+            <Ionicons name="trash-bin-outline" size={20} color="#ff3b30" />
+          </Pressable>
         </View>
-        <View style={styles.statBox}>
-          <Text style={styles.statLabel}>{t('history.ao5')}</Text>
-          <Text style={[styles.statValue, isDark && styles.textDark]}>{ao5}</Text>
+        <View style={styles.statsRow}>
+          <View style={styles.statBox}>
+            <Text style={styles.statLabel}>{t('history.bestTime')}</Text>
+            <Text style={[styles.statValue, isDark && styles.textDark]}>{bestTime}</Text>
+          </View>
+          <View style={styles.statBox}>
+            <Text style={styles.statLabel}>{t('history.ao5')}</Text>
+            <Text style={[styles.statValue, isDark && styles.textDark]}>{ao5}</Text>
+          </View>
         </View>
       </View>
 
@@ -153,8 +186,6 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   statsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
     padding: 20,
     backgroundColor: '#fff',
     borderBottomWidth: 1,
@@ -164,6 +195,25 @@ const styles = StyleSheet.create({
   statsContainerDark: {
     backgroundColor: '#1e1e1e',
     borderBottomColor: '#333',
+  },
+  statsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  statsTitle: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#8e8e93',
+    textTransform: 'uppercase',
+  },
+  clearButton: {
+    padding: 4,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
   },
   statBox: {
     alignItems: 'center',
