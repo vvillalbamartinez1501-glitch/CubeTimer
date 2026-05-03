@@ -123,6 +123,7 @@ const Tooltip = ({
 
 // ─── MAIN COMPONENT ──────────────────────────────────────────────────────────
 export default function StatsScreen() {
+  console.log('[StatsScreen] mounted');
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const { t } = useTranslation();
@@ -135,7 +136,6 @@ export default function StatsScreen() {
   // Fetch solves when screen focused or category changes
   useFocusEffect(
     useCallback(() => {
-      if (Platform.OS === 'web') return;
       getSolves(activeUserId, selectedCategory).then(data => {
         setSolves(data ?? []);
         setActiveLinePoint(null);
@@ -258,17 +258,8 @@ export default function StatsScreen() {
       </ScrollView>
 
       {/* ── Empty State ───────────────────────────────────────── */}
-      {solves.length === 0 && Platform.OS !== 'web' && (
+      {solves.length === 0 && (
         <EmptyState isDark={isDark} t={t} />
-      )}
-
-      {Platform.OS === 'web' && (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyEmoji}>🌐</Text>
-          <Text style={[styles.emptyTitle, isDark && styles.textLight]}>
-            {t('history.webNotAvailable')}
-          </Text>
-        </View>
       )}
 
       {/* ══════════════════════════════════════════════════════════

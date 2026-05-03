@@ -1,25 +1,61 @@
-import { Platform } from 'react-native';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 
-// 1. Evitar errores de Polyfill en entornos Node (Server Side)
+// URL polyfill — native only (web has URL built-in)
 if (Platform.OS !== 'web') {
-  require('react-native-url-polyfill/auto');
+  try { require('react-native-url-polyfill/auto'); } catch (_) {}
 }
 
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '';
+const supabaseUrl     = process.env.EXPO_PUBLIC_SUPABASE_URL     ?? '';
+const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '';
 
-// 2. Verificar si estamos en un entorno con acceso a Web APIs
 const canUseDOM = typeof window !== 'undefined';
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    // Solo usamos AsyncStorage si estamos en el cliente (navegador/móvil)
-    // En el servidor (build time), pasamos un almacenamiento vacío
-    storage: canUseDOM ? AsyncStorage : undefined,
-    autoRefreshToken: canUseDOM,
-    persistSession: canUseDOM,
-    detectSessionInUrl: canUseDOM,
-  },
-});
+// ─── Safe client factory ──────────────────────────────────────────────────────
+// createClient throws if the URL is empty/invalid, which crashes the whole app.
+// We return a real client only when credentials are present.
+function buildClient(): SupabaseClient {
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.warn(
+      '[Supabase] Missing env vars — running in offline mode.\n' +
+      'Set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY.',
+    );
+    // Return a do-nothing stub so callers never throw
+    return {
+      auth: {
+        getSession: async () => ({ data: { session: null }, error: null }),
+        onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
+        signInWithPassword: async () => ({ data: {}, error: { message: 'Offline mode' } }),
+        signUp: async () => ({ data: {}, error: { message: 'Offline mode' } }),
+        signOut: async () => ({ error: null }),
+      },
+      from: () => ({
+        insert: async () => ({ error: null }),
+        select: () => ({
+          eq: () => ({
+            eq: () => ({
+              order: async () => ({ data: [], error: null }),
+            }),
+          }),
+        }),
+        delete: () => ({
+          eq: () => ({
+            eq: async () => ({ error: null }),
+          }),
+        }),
+      }),
+    } as unknown as SupabaseClient;
+  }
+
+  return createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      storage: canUseDOM ? AsyncStorage : undefined,
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: false,
+    },
+  });
+}
+
+export const supabase = buildClient();

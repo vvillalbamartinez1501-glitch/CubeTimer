@@ -360,6 +360,7 @@ function ProfileCard({ isDark }: { isDark: boolean }) {
 
 // ─── Main Screen ─────────────────────────────────────────────────────────────
 export default function ProfileScreen() {
+  console.log('[ProfileScreen] mounted');
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const { t, i18n } = useTranslation();

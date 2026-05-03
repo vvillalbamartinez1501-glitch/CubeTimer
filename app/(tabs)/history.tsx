@@ -16,6 +16,7 @@ interface SolveRecord {
 }
 
 export default function HistoryScreen() {
+  console.log('[HistoryScreen] mounted');
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const { t } = useTranslation();

@@ -12,29 +12,46 @@ import { supabase } from '../src/lib/supabase';
 import { useAppStore } from '../src/store/useAppStore';
 
 export default function RootLayout() {
+  console.log('[RootLayout] mounting');
   const colorScheme = useColorScheme();
   const setSupabaseUser = useAppStore(s => s.setSupabaseUser);
 
   useEffect(() => {
-    // Hydrate session on first load
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSupabaseUser(session?.user ?? null);
-    });
-
-    // Listen to all auth state changes (login, logout, token refresh)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+    // Hydrate session — wrapped in try/catch so any Supabase error never blocks render
+    const init = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
         setSupabaseUser(session?.user ?? null);
-      },
-    );
+      } catch (e) {
+        console.warn('[RootLayout] getSession error (app continues):', e);
+        setSupabaseUser(null);
+      }
+    };
 
-    return () => subscription.unsubscribe();
+    init();
+
+    // Listen to auth state changes
+    let subscription: { unsubscribe: () => void } | undefined;
+    try {
+      const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+        setSupabaseUser(session?.user ?? null);
+      });
+      subscription = data.subscription;
+    } catch (e) {
+      console.warn('[RootLayout] onAuthStateChange error (app continues):', e);
+    }
+
+    return () => {
+      try { subscription?.unsubscribe(); } catch (_) {}
+    };
   }, []);
 
+  // NEVER return null — routes must always be available
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="+not-found" />
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>
