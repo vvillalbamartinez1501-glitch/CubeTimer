@@ -9,6 +9,7 @@ import {
   Text,
   useColorScheme,
   View,
+  Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CategorySelector } from '../../src/components/CategorySelector';
@@ -114,51 +115,63 @@ export default function TimerScreen() {
   }, [displayTime, currentScramble, activeUserId, activeCategoryId, activeSessionId, handleDiscard, updateStreak, checkAchievements, fetchHistory]);
 
   const handleDelete = useCallback(async (id: number) => {
-    Alert.alert(
-      t('history.deleteConfirmTitle'),
-      t('history.deleteConfirmMsg'),
-      [
-        { text: t('actions.cancel'), style: 'cancel' },
-        { 
-          text: t('actions.delete'), 
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await deleteSolve(id);
-              fetchHistory();
-              Alert.alert(t('actions.success'), t('history.deletedSuccess'));
-            } catch (e) {
-              Alert.alert('Error', 'No se pudo eliminar');
-            }
-          }
-        },
-      ]
-    );
+    const title = t('history.deleteConfirmTitle') || '¿Eliminar registro?';
+    const msg = t('history.deleteConfirmMsg') || 'Esta acción no se puede deshacer.';
+    
+    const performDelete = async () => {
+      try {
+        await deleteSolve(id);
+        fetchHistory();
+        if (Platform.OS !== 'web') {
+          Alert.alert(t('actions.success') || 'Éxito', t('history.deletedSuccess') || 'Eliminado correctamente');
+        }
+      } catch (e) {
+        if (Platform.OS !== 'web') Alert.alert('Error', 'No se pudo eliminar');
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      if (window.confirm(`${title}\n\n${msg}`)) {
+        performDelete();
+      }
+      return;
+    }
+
+    Alert.alert(title, msg, [
+      { text: t('actions.cancel') || 'Cancelar', style: 'cancel' },
+      { text: t('actions.delete') || 'Eliminar', style: 'destructive', onPress: performDelete },
+    ]);
   }, [t, fetchHistory]);
 
   const handleClearSession = useCallback(() => {
     if (solves.length === 0) return;
     
-    Alert.alert(
-      t('history.clearSessionTitle') || '¿Vaciar sesión?',
-      t('history.clearSessionMsg') || '¿Estás seguro de que quieres eliminar TODOS los tiempos de esta sesión? Esta acción no se puede deshacer.',
-      [
-        { text: t('actions.cancel'), style: 'cancel' },
-        { 
-          text: t('actions.delete'), 
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await clearSessionSolves(activeUserId, activeCategoryId, activeSessionId);
-              fetchHistory();
-              Alert.alert(t('actions.success'), t('history.sessionCleared') || 'Sesión vaciada correctamente');
-            } catch (e) {
-              Alert.alert('Error', 'No se pudo vaciar la sesión');
-            }
-          }
-        },
-      ]
-    );
+    const title = t('history.clearSessionTitle') || '¿Vaciar sesión?';
+    const msg = t('history.clearSessionMsg') || '¿Estás seguro de que quieres eliminar TODOS los tiempos de esta sesión? Esta acción no se puede deshacer.';
+
+    const performClear = async () => {
+      try {
+        await clearSessionSolves(activeUserId, activeCategoryId, activeSessionId);
+        fetchHistory();
+        if (Platform.OS !== 'web') {
+          Alert.alert(t('actions.success') || 'Éxito', t('history.sessionCleared') || 'Sesión vaciada correctamente');
+        }
+      } catch (e) {
+        if (Platform.OS !== 'web') Alert.alert('Error', 'No se pudo vaciar la sesión');
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      if (window.confirm(`${title}\n\n${msg}`)) {
+        performClear();
+      }
+      return;
+    }
+
+    Alert.alert(title, msg, [
+      { text: t('actions.cancel') || 'Cancelar', style: 'cancel' },
+      { text: t('actions.delete') || 'Eliminar', style: 'destructive', onPress: performClear },
+    ]);
   }, [t, solves, activeUserId, activeCategoryId, activeSessionId, fetchHistory]);
 
   // ─── Visuales ───────────────────────────────────────────────────────────────

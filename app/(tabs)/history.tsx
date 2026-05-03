@@ -40,54 +40,63 @@ export default function HistoryScreen() {
   );
 
   const handleDelete = useCallback(async (id: number) => {
-    Alert.alert(
-      t('history.deleteConfirmTitle'),
-      t('history.deleteConfirmMsg'),
-      [
-        { text: t('actions.cancel'), style: 'cancel' },
-        { 
-          text: t('actions.delete'), 
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await deleteSolve(id);
-              setSolves(prev => prev.filter(s => s.id !== id));
-              Alert.alert(
-                t('actions.success'), 
-                t('history.deletedSuccess')
-              );
-            } catch (e) {
-              Alert.alert('Error', 'No se pudo eliminar el registro');
-            }
-          }
-        },
-      ]
-    );
+    const title = t('history.deleteConfirmTitle') || '¿Eliminar registro?';
+    const msg = t('history.deleteConfirmMsg') || 'Esta acción no se puede deshacer.';
+
+    const performDelete = async () => {
+      try {
+        await deleteSolve(id);
+        setSolves(prev => prev.filter(s => s.id !== id));
+        if (Platform.OS !== 'web') {
+          Alert.alert(t('actions.success') || 'Éxito', t('history.deletedSuccess') || 'Eliminado correctamente');
+        }
+      } catch (e) {
+        if (Platform.OS !== 'web') Alert.alert('Error', 'No se pudo eliminar el registro');
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      if (window.confirm(`${title}\n\n${msg}`)) {
+        performDelete();
+      }
+      return;
+    }
+
+    Alert.alert(title, msg, [
+      { text: t('actions.cancel') || 'Cancelar', style: 'cancel' },
+      { text: t('actions.delete') || 'Eliminar', style: 'destructive', onPress: performDelete },
+    ]);
   }, [t]);
 
   const handleClearSession = useCallback(() => {
     if (solves.length === 0) return;
 
-    Alert.alert(
-      t('history.clearSessionTitle') || '¿Vaciar sesión?',
-      t('history.clearSessionMsg') || '¿Estás seguro de que quieres eliminar TODOS los tiempos de esta sesión? Esta acción no se puede deshacer.',
-      [
-        { text: t('actions.cancel'), style: 'cancel' },
-        { 
-          text: t('actions.delete'), 
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await clearSessionSolves(activeUserId, activeCategoryId, activeSessionId);
-              setSolves([]);
-              Alert.alert(t('actions.success'), t('history.sessionCleared') || 'Sesión vaciada correctamente');
-            } catch (e) {
-              Alert.alert('Error', 'No se pudo vaciar la sesión');
-            }
-          }
-        },
-      ]
-    );
+    const title = t('history.clearSessionTitle') || '¿Vaciar sesión?';
+    const msg = t('history.clearSessionMsg') || '¿Estás seguro de que quieres eliminar TODOS los tiempos de esta sesión? Esta acción no se puede deshacer.';
+
+    const performClear = async () => {
+      try {
+        await clearSessionSolves(activeUserId, activeCategoryId, activeSessionId);
+        setSolves([]);
+        if (Platform.OS !== 'web') {
+          Alert.alert(t('actions.success') || 'Éxito', t('history.sessionCleared') || 'Sesión vaciada correctamente');
+        }
+      } catch (e) {
+        if (Platform.OS !== 'web') Alert.alert('Error', 'No se pudo vaciar la sesión');
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      if (window.confirm(`${title}\n\n${msg}`)) {
+        performClear();
+      }
+      return;
+    }
+
+    Alert.alert(title, msg, [
+      { text: t('actions.cancel') || 'Cancelar', style: 'cancel' },
+      { text: t('actions.delete') || 'Eliminar', style: 'destructive', onPress: performClear },
+    ]);
   }, [t, solves, activeUserId, activeCategoryId, activeSessionId]);
 
   // ── useMemo: solo se recalcula cuando cambia la lista de solves ───────────
