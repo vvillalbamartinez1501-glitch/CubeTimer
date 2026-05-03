@@ -12,7 +12,9 @@
     "pressToReady": "Presiona y mantén para estar listo",
     "releaseToStart": "Suelta para iniciar",
     "tapToStop": "Toca para detener",
-    "inspectionWCA": "15s Inspección WCA"
+    "inspectionWCA": "15s Inspección WCA",
+    "start": "INICIAR",
+    "stop": "PARAR"
   },
   "actions": {
     "save": "Guardar",

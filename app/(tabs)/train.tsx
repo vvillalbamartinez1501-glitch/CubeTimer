@@ -212,6 +212,27 @@ function DrillTimerModal({
           <Text style={[styles.drillTimer, { color: timerColor }]}>
             {formatTime(time)}
           </Text>
+
+          {timerState !== 'finished' && (
+            <Pressable
+              onPress={(e) => { e.stopPropagation(); handlePress(); }}
+              style={({ pressed }) => [
+                styles.timerActionButton,
+                {
+                  backgroundColor: timerState === 'running' ? '#ff4444' : '#00C851',
+                  transform: [{ scale: pressed ? 0.92 : 1 }],
+                  shadowColor: timerState === 'running' ? '#ff4444' : '#00C851',
+                }
+              ]}
+            >
+              <Ionicons 
+                name={timerState === 'running' ? "stop" : "play"} 
+                size={42} 
+                color="#fff" 
+              />
+            </Pressable>
+          )}
+
           <Text style={[styles.drillInstruction, { color: mutedCol }]}>
             {timerState === 'idle'   && 'Tap to get ready'}
             {timerState === 'holding'&& '🟢 Release to start'}
@@ -481,5 +502,17 @@ const styles = StyleSheet.create({
   recentChip: {
     borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5,
     borderWidth: 1,
+  },
+  timerActionButton: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 8,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    marginVertical: 20,
   },
 });
