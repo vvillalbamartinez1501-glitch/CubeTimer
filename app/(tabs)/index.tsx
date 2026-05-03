@@ -54,6 +54,9 @@ export default function TimerScreen() {
     isInspectionEnabled,
   });
 
+  console.log('[TimerScreen] State:', timerState, 'DisplayTime:', displayTime);
+
+
   // ─── Acciones Post-Solve ────────────────────────────────────────────────────
   const handleDiscard = useCallback(() => {
     resetTimer();
@@ -160,10 +163,22 @@ export default function TimerScreen() {
               </View>
             )}
 
-            {/* Botón principal (Para dispositivos sin teclado) */}
+            {/* Botón principal: Simplificado a Toggle para máxima compatibilidad */}
             <Pressable
-              onPressIn={onPressDown}
-              onPressOut={onPressUp}
+              onPress={() => {
+                console.log('[TimerScreen] Button onPress, current state:', timerState);
+                if (timerState === 'idle' || timerState === 'finished' || timerState === 'inspecting') {
+                  onPressDown();
+                  // Forzamos el inicio si no es inspección
+                  if (!isInspectionEnabled) {
+                    setTimeout(onPressUp, 10);
+                  }
+                } else if (timerState === 'holding') {
+                  onPressUp();
+                } else if (timerState === 'running') {
+                  onPressDown();
+                }
+              }}
               style={({ pressed }) => [
                 styles.timerActionButton,
                 {
@@ -182,6 +197,8 @@ export default function TimerScreen() {
                 {timerState === 'running' ? t('timer.stop') : t('timer.start')}
               </Text>
             </Pressable>
+
+
 
             <Text style={[styles.instructionText, isDark && styles.textLight]}>
               {instructionText}

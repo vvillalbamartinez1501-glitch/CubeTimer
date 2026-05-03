@@ -16,7 +16,6 @@ export default function RootLayout() {
   const setSupabaseUser = useAppStore(s => s.setSupabaseUser);
 
   useEffect(() => {
-    // Hydrate session — wrapped in try/catch so any Supabase error never blocks render
     const init = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
@@ -29,7 +28,6 @@ export default function RootLayout() {
 
     init();
 
-    // Listen to auth state changes
     let subscription: { unsubscribe: () => void } | undefined;
     try {
       const { data } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -44,6 +42,7 @@ export default function RootLayout() {
       try { subscription?.unsubscribe(); } catch (_) {}
     };
   }, []);
+
 
   // NEVER return null — routes must always be available
   return (

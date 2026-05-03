@@ -2,10 +2,9 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
-// URL polyfill — native only (web has URL built-in)
-if (Platform.OS !== 'web') {
-  try { require('react-native-url-polyfill/auto'); } catch (_) {}
-}
+// URL polyfill is only for native environments without a global URL object.
+// We avoid it here to prevent 'import.meta' syntax errors on Web.
+
 
 const supabaseUrl     = process.env.EXPO_PUBLIC_SUPABASE_URL     ?? '';
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '';
