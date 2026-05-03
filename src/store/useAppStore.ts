@@ -8,7 +8,7 @@ interface AppState {
   activeCategoryId: string;
   customCategoryName: string;
   currentScramble: string;
-  generateNewScramble: () => void;
+  generateNewScramble: (puzzleId?: string) => void;
   setActiveCategory: (id: string, customName?: string) => void;
   setActiveUser: (id: number) => void;
 
@@ -17,10 +17,6 @@ interface AppState {
   setSupabaseUser: (user: User | null) => void;
 }
 
-const isGenericScramble = (id: string) => {
-  return id === 'custom' || id.includes('ghost') || id.includes('mirror');
-};
-
 export const useAppStore = create<AppState>((set, get) => ({
   // ── Timer defaults ──
   activeUserId: 1,
@@ -28,18 +24,16 @@ export const useAppStore = create<AppState>((set, get) => ({
   customCategoryName: '',
   currentScramble: generateScramble('3x3'),
 
-  generateNewScramble: () => {
-    const { activeCategoryId } = get();
+  generateNewScramble: (puzzleId?: string) => {
+    const id = puzzleId || get().activeCategoryId;
     set({
-      currentScramble: generateScramble(
-        isGenericScramble(activeCategoryId) ? 'generic' : activeCategoryId,
-      ),
+      currentScramble: generateScramble(id),
     });
   },
 
   setActiveCategory: (id: string, customName?: string) => {
     set({ activeCategoryId: id, customCategoryName: customName || '' });
-    get().generateNewScramble();
+    get().generateNewScramble(id);
   },
 
   setActiveUser: (id: number) => {

@@ -15,6 +15,7 @@ import { getCategorySolveCount, getTotalSolves, saveSolve } from '../../src/data
 import { useSpeedTimer } from '../../src/hooks/useSpeedTimer';
 import { useGamificationStore } from '../../src/store/gamificationStore';
 import { useAppStore } from '../../src/store/useAppStore';
+import { ScrambleImage } from '../../src/components/ScrambleImage';
 
 // ─── Formateador Local (Garantiza . para centésimas) ─────────────────────────
 const formatTimeLocal = (ms: number): string => {
@@ -122,6 +123,11 @@ export default function TimerScreen() {
             <Text style={[styles.scrambleText, isDark && styles.textDark]}>
               {currentScramble}
             </Text>
+            <ScrambleImage 
+              scramble={currentScramble} 
+              puzzle={activeCategoryId} 
+              visible={timerState === 'idle'} 
+            />
           </View>
         )}
       </View>
