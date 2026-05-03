@@ -1,14 +1,20 @@
-import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import {
-  StyleSheet, Text, View, Pressable,
-  useColorScheme, Switch, Platform, Alert,
-} from 'react-native';
-import { useAppStore } from '../../src/store/useAppStore';
-import { CategorySelector } from '../../src/components/CategorySelector';
-import { saveSolve, getTotalSolves, getCategorySolveCount } from '../../src/database/operations';
 import { Ionicons } from '@expo/vector-icons';
+import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import {
+  Alert,
+  Pressable,
+  StyleSheet,
+  Switch,
+  Text,
+  useColorScheme,
+  View,
+} from 'react-native';
+import { CategorySelector } from '../../src/components/CategorySelector';
+import { getCategorySolveCount, getTotalSolves, saveSolve } from '../../src/database/operations';
+import { useSpeedTimer } from '../../src/hooks/useSpeedTimer';
 import { useGamificationStore } from '../../src/store/gamificationStore';
+import { useAppStore } from '../../src/store/useAppStore';
 
 // ─── Formateador Local (Garantiza . para centésimas) ─────────────────────────
 const formatTimeLocal = (ms: number): string => {
@@ -24,8 +30,6 @@ const formatTimeLocal = (ms: number): string => {
   return `${mStr}${sStr}.${cStr}`;
 };
 
-type TimerState = 'idle' | 'inspecting' | 'holding' | 'running' | 'finished';
-
 export default function TimerScreen() {
   const colorScheme = useColorScheme();
   const isDark      = colorScheme === 'dark';
@@ -34,148 +38,34 @@ export default function TimerScreen() {
   const { currentScramble, generateNewScramble, activeUserId, activeCategoryId } = useAppStore();
   const { updateStreak, checkAchievements } = useGamificationStore();
 
-  // ─── Estados ─────────────────────────────────────────────────────────────────
-  const [timerState, setTimerState] = useState<TimerState>('idle');
   const [isInspectionEnabled, setIsInspectionEnabled] = useState(false);
-  const [inspectionTime, setInspectionTime] = useState(15);
-  const [hasPenalty, setHasPenalty] = useState(false);
-  const [runningTime, setRunningTime] = useState(0);
-  const [displayTime, setDisplayTime] = useState(0);
 
-  // ─── Refs ───────────────────────────────────────────────────────────────────
-  const timerStateRef = useRef<TimerState>('idle');
-  const startTimeRef  = useRef<number>(0);
-  const intervalRef   = useRef<ReturnType<typeof setInterval> | null>(null);
-  const inspectionRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const hasPenaltyRef = useRef(false);
-
-  // Helper para sincronizar ref y estado
-  const setTimerStateSync = useCallback((state: TimerState) => {
-    console.log('[Timer] State transition:', timerStateRef.current, '->', state);
-    timerStateRef.current = state;
-    setTimerState(state);
-  }, []);
-
-  const stopInterval = useCallback(() => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-  }, []);
-
-  const startInspection = useCallback(() => {
-    setTimerStateSync('inspecting');
-    setInspectionTime(15);
-    hasPenaltyRef.current = false;
-    setHasPenalty(false);
-
-    if (inspectionRef.current) clearInterval(inspectionRef.current);
-    inspectionRef.current = setInterval(() => {
-      setInspectionTime((prev) => {
-        const next = prev - 1;
-        if (next <= 0) {
-          hasPenaltyRef.current = true;
-          setHasPenalty(true);
-        }
-        return next;
-      });
-    }, 1000);
-  }, [setTimerStateSync]);
-
-  // ─── Lógica Principal (Down/Up) ─────────────────────────────────────────────
-  const handlePressDown = useCallback(() => {
-    const state = timerStateRef.current;
-
-    // Si está en 'finished', un nuevo toque reinicia a 'idle' o 'holding'
-    if (state === 'finished') {
-      setDisplayTime(0);
-      setRunningTime(0);
-      hasPenaltyRef.current = false;
-      setHasPenalty(false);
-      // No retornamos, dejamos que pase al bloque 'idle' más abajo
-      timerStateRef.current = 'idle'; 
-    }
-
-    const currentState = timerStateRef.current;
-
-    if (currentState === 'idle') {
-      if (isInspectionEnabled) {
-        startInspection();
-      } else {
-        hasPenaltyRef.current = false;
-        setHasPenalty(false);
-        setTimerStateSync('holding');
-      }
-    } else if (currentState === 'inspecting') {
-      if (inspectionRef.current) clearInterval(inspectionRef.current);
-      setTimerStateSync('holding');
-    } else if (currentState === 'running') {
-      stopInterval();
-      const elapsed = Date.now() - startTimeRef.current;
-      const finalTime = hasPenaltyRef.current ? elapsed + 2000 : elapsed;
-      setDisplayTime(finalTime);
-      setRunningTime(0);
-      setTimerStateSync('finished');
-    }
-  }, [isInspectionEnabled, setTimerStateSync, startInspection, stopInterval]);
-
-  const handlePressUp = useCallback(() => {
-    if (timerStateRef.current !== 'holding') return;
-
-    startTimeRef.current = Date.now();
-    setRunningTime(0);
-    setTimerStateSync('running');
-
-    intervalRef.current = setInterval(() => {
-      setRunningTime(Date.now() - startTimeRef.current);
-    }, 30);
-  }, [setTimerStateSync]);
-
-  // ─── Listeners Web ──────────────────────────────────────────────────────────
-  useEffect(() => {
-    if (Platform.OS !== 'web') return;
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.code === 'Space') {
-        e.preventDefault();
-        if (!e.repeat) handlePressDown();
-      }
-    };
-    const onKeyUp = (e: KeyboardEvent) => {
-      if (e.code === 'Space') {
-        e.preventDefault();
-        handlePressUp();
-      }
-    };
-    window.addEventListener('keydown', onKeyDown);
-    window.addEventListener('keyup', onKeyUp);
-    return () => {
-      window.removeEventListener('keydown', onKeyDown);
-      window.removeEventListener('keyup', onKeyUp);
-    };
-  }, [handlePressDown, handlePressUp]);
-
-  useEffect(() => {
-    return () => {
-      stopInterval();
-      if (inspectionRef.current) clearInterval(inspectionRef.current);
-    };
-  }, [stopInterval]);
+  // ─── Custom Hook para el Cronómetro (Lógica centralizada) ──────────────────
+  const {
+    timerState,
+    displayTime,
+    isInspecting,
+    hasPenalty,
+    onPressDown,
+    onPressUp,
+    resetTimer,
+    addPenalty,
+  } = useSpeedTimer({
+    isInspectionEnabled,
+  });
 
   // ─── Acciones Post-Solve ────────────────────────────────────────────────────
-  const handleAddTwo = useCallback(() => setDisplayTime(prev => prev + 2000), []);
-
   const handleDiscard = useCallback(() => {
-    setDisplayTime(0);
-    hasPenaltyRef.current = false;
-    setHasPenalty(false);
-    setTimerStateSync('idle');
+    resetTimer();
     generateNewScramble();
-  }, [setTimerStateSync, generateNewScramble]);
+  }, [resetTimer, generateNewScramble]);
 
   const handleSave = useCallback(() => {
     const timeToSave = displayTime;
     const scrambleToSave = currentScramble;
-    handleDiscard(); // Reset UI inmediatamente
+    
+    // Reset UI inmediatamente (Interfaz Optimista)
+    handleDiscard();
 
     const persist = async () => {
       try {
@@ -197,16 +87,14 @@ export default function TimerScreen() {
   // ─── Visuales ───────────────────────────────────────────────────────────────
   const timerColor = useMemo(() => {
     if (timerState === 'holding') return '#00C851';
-    if (timerState === 'inspecting' && hasPenalty) return '#ff4444';
+    if (isInspecting && hasPenalty) return '#ff4444';
     return isDark ? '#fff' : '#212529';
-  }, [timerState, hasPenalty, isDark]);
+  }, [timerState, isInspecting, hasPenalty, isDark]);
 
   const displayText = useMemo(() => {
-    if (timerState === 'inspecting') return hasPenalty ? '+2' : String(inspectionTime);
-    if (timerState === 'running') return formatTimeLocal(runningTime);
-    if (timerState === 'finished') return formatTimeLocal(displayTime);
-    return formatTimeLocal(0);
-  }, [timerState, hasPenalty, inspectionTime, runningTime, displayTime]);
+    if (isInspecting) return hasPenalty ? '+2' : String(displayTime);
+    return formatTimeLocal(displayTime);
+  }, [isInspecting, hasPenalty, displayTime]);
 
   const instructionText = useMemo(() => {
     if (timerState === 'idle') return t('timer.holdToStart');
@@ -218,39 +106,45 @@ export default function TimerScreen() {
 
   return (
     <View style={[styles.container, isDark && styles.containerDark]}>
-      {/* El Pressable ahora envuelve casi todo para que toda la pantalla responda */}
+      
+      {/* 1. SECCIÓN SUPERIOR: Category Selector y Scramble */}
+      <View style={styles.topSection}>
+        {timerState === 'idle' && (
+          <View style={styles.selectorWrapper}>
+            <CategorySelector />
+          </View>
+        )}
+        {(timerState === 'idle' || isInspecting || timerState === 'finished') && (
+          <View style={styles.scrambleContainer}>
+            <Text style={[styles.scrambleText, isDark && styles.textDark]}>
+              {currentScramble}
+            </Text>
+          </View>
+        )}
+      </View>
+
+      {/* 2. ÁREA DEL CRONÓMETRO: Pressable gigante (Middle) */}
       <Pressable
-        style={styles.mainPressable}
-        onPressIn={handlePressDown}
-        onPressOut={handlePressUp}
+        style={styles.timerContainer}
+        onPressIn={onPressDown}
+        onPressOut={onPressUp}
       >
-        <View style={styles.topSection}>
-          {timerState === 'idle' && <CategorySelector />}
-          {(timerState === 'idle' || timerState === 'inspecting' || timerState === 'finished') && (
-            <View style={styles.scrambleContainer}>
-              <Text style={[styles.scrambleText, isDark && styles.textDark]}>
-                {currentScramble}
-              </Text>
-            </View>
-          )}
-        </View>
+        <Text style={[styles.timerText, { color: timerColor }]}>
+          {displayText}
+        </Text>
+      </Pressable>
 
-        <View style={styles.timerContainer}>
-          <Text style={[styles.timerText, { color: timerColor }]}>
-            {displayText}
-          </Text>
-        </View>
-
+      {/* 3. SECCIÓN INFERIOR: Botones de acción y controles (Bottom) */}
+      <View style={styles.bottomSection}>
         {timerState === 'finished' ? (
           <View style={styles.actionRow}>
-            {/* Los botones son Pressables internos, hay que evitar que el externo interfiera */}
-            <Pressable onPress={(e) => { e.stopPropagation(); handleDiscard(); }} style={[styles.actionButton, styles.buttonDelete]}>
+            <Pressable onPress={handleDiscard} style={[styles.actionButton, styles.buttonDelete]}>
               <Ionicons name="trash" size={32} color="#fff" />
             </Pressable>
-            <Pressable onPress={(e) => { e.stopPropagation(); handleAddTwo(); }} style={[styles.actionButton, styles.buttonPenalty]}>
+            <Pressable onPress={addPenalty} style={[styles.actionButton, styles.buttonPenalty]}>
               <Text style={styles.penaltyText}>+2s</Text>
             </Pressable>
-            <Pressable onPress={(e) => { e.stopPropagation(); handleSave(); }} style={[styles.actionButton, styles.buttonSave]}>
+            <Pressable onPress={handleSave} style={[styles.actionButton, styles.buttonSave]}>
               <Ionicons name="checkmark" size={36} color="#fff" />
             </Pressable>
           </View>
@@ -266,9 +160,10 @@ export default function TimerScreen() {
               </View>
             )}
 
+            {/* Botón principal (Para dispositivos sin teclado) */}
             <Pressable
-              onPressIn={(e) => { e.stopPropagation(); handlePressDown(); }}
-              onPressOut={(e) => { e.stopPropagation(); handlePressUp(); }}
+              onPressIn={onPressDown}
+              onPressOut={onPressUp}
               style={({ pressed }) => [
                 styles.timerActionButton,
                 {
@@ -293,7 +188,7 @@ export default function TimerScreen() {
             </Text>
           </View>
         )}
-      </Pressable>
+      </View>
     </View>
   );
 }
@@ -306,18 +201,21 @@ const styles = StyleSheet.create({
   containerDark: {
     backgroundColor: '#121212',
   },
-  mainPressable: {
-    flex: 1,
-  },
   topSection: {
     paddingTop: 40,
+    minHeight: 120,
+    justifyContent: 'flex-start',
     zIndex: 10,
-    minHeight: 180,
+  },
+  selectorWrapper: {
+    zIndex: 100,
+    minHeight: 50,
   },
   scrambleContainer: {
     paddingHorizontal: 20,
     alignItems: 'center',
     justifyContent: 'center',
+    marginTop: 10,
   },
   scrambleText: {
     fontSize: 24,
@@ -329,14 +227,19 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    width: '100%',
   },
   timerText: {
     fontSize: 90,
     fontWeight: '300',
     fontVariant: ['tabular-nums'],
   },
+  bottomSection: {
+    minHeight: 180,
+    justifyContent: 'center',
+  },
   instructionContainer: {
-    paddingBottom: 60,
+    paddingBottom: 40,
     alignItems: 'center',
   },
   instructionText: {
@@ -348,6 +251,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
+    marginBottom: 10,
   },
   inspectionText: {
     fontSize: 16,
@@ -358,7 +262,7 @@ const styles = StyleSheet.create({
   actionRow: {
     flexDirection: 'row',
     justifyContent: 'center',
-    paddingBottom: 60,
+    paddingBottom: 40,
     gap: 30,
   },
   actionButton: {
