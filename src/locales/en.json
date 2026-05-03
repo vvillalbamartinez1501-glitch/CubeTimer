@@ -5,7 +5,20 @@
     "stats": "Stats",
     "train": "Train",
     "learn": "Learn",
-    "profile": "Profile"
+    "profile": "Profile",
+    "achievements": "Achievements"
+  },
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "appearance": "Appearance",
+    "darkMode": "Dark Mode",
+    "lightMode": "Light Mode",
+    "systemDefault": "System Default",
+    "timer": "Timer",
+    "inspectionSound": "Inspection Sound",
+    "vibration": "Vibration",
+    "about": "About"
   },
   "timer": {
     "holdToStart": "Hold screen or space to start",

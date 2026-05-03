@@ -52,6 +52,13 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="achievements"
+        options={{
+          title: t('tabs.achievements') || 'Logros',
+          tabBarIcon: ({ color }) => <Ionicons name="trophy-outline" size={24} color={color} />,
+        }}
+      />
+      <Tabs.Screen
         name="profile"
         options={{
           title: t('tabs.profile'),

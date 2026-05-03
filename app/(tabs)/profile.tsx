@@ -1,28 +1,13 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import {
   StyleSheet, Text, View, Pressable, ScrollView, TextInput,
   ActivityIndicator, Alert, useColorScheme, Platform,
-  KeyboardAvoidingView, Dimensions,
+  KeyboardAvoidingView,
 } from 'react-native';
-import { useFocusEffect } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../src/lib/supabase';
 import { useAppStore } from '../../src/store/useAppStore';
-import { useGamificationStore, TOTAL_ACHIEVEMENTS } from '../../src/store/gamificationStore';
-import { getSolves } from '../../src/database/operations';
-import { formatTime } from '../../src/utils/timeFormat';
-
-const { width: SW } = Dimensions.get('window');
-const CARD_SIZE = (SW - 48 - 12) / 3; // 3-column grid
-
-const LANGUAGES = [
-  { code: 'en', label: 'English',  flag: '🇬🇧' },
-  { code: 'es', label: 'Español',  flag: '🇪🇸' },
-  { code: 'zh', label: '中文',     flag: '🇨🇳' },
-  { code: 'hi', label: 'हिन्दी',  flag: '🇮🇳' },
-  { code: 'fr', label: 'Français', flag: '🇫🇷' },
-];
 
 // ─── Auth Form ────────────────────────────────────────────────────────────────
 function AuthForm({ isDark }: { isDark: boolean }) {
@@ -102,224 +87,6 @@ function AuthForm({ isDark }: { isDark: boolean }) {
   );
 }
 
-// ─── Streak Header ────────────────────────────────────────────────────────────
-function StreakHeader({ isDark }: { isDark: boolean }) {
-  const { streak, achievements } = useGamificationStore();
-  const unlockedCount = achievements.filter(a => a.unlockedAt).length;
-
-  const fireColor  = streak >= 7 ? '#ff4757' : streak >= 3 ? '#ffa502' : '#ff6b35';
-  const cardBg     = isDark ? '#1e1e2e' : '#fff';
-  const textCol    = isDark ? '#e9ecef' : '#212529';
-  const mutedCol   = isDark ? '#868e96' : '#6c757d';
-
-  return (
-    <View style={[styles.streakCard, { backgroundColor: cardBg }]}>
-      {/* Streak */}
-      <View style={styles.streakMain}>
-        <Text style={[styles.streakFire, { color: fireColor }]}>🔥</Text>
-        <View>
-          <Text style={[styles.streakCount, { color: fireColor }]}>{streak}</Text>
-          <Text style={[styles.streakLabel, { color: mutedCol }]}>
-            {streak === 1 ? 'Day Streak' : 'Day Streak'}
-          </Text>
-        </View>
-      </View>
-
-      {/* Divider */}
-      <View style={[styles.streakDivider, { backgroundColor: isDark ? '#2a2a3e' : '#f1f3f5' }]} />
-
-      {/* Achievements count */}
-      <View style={styles.streakAchCol}>
-        <Text style={[styles.streakAchCount, { color: '#ffd700' }]}>
-          {unlockedCount}/{TOTAL_ACHIEVEMENTS}
-        </Text>
-        <Text style={[styles.streakLabel, { color: mutedCol }]}>Achievements</Text>
-      </View>
-    </View>
-  );
-}
-
-// ─── Personal Goal Section ────────────────────────────────────────────────────
-function GoalSection({ isDark }: { isDark: boolean }) {
-  const { personalGoals, setGoal } = useGamificationStore();
-  const { activeUserId, activeCategoryId } = useAppStore();
-  const [inputVal, setInputVal] = useState('');
-  const [currentAo5, setCurrentAo5] = useState<number | null>(null);
-
-  const accent   = isDark ? '#4dabf7' : '#228be6';
-  const cardBg   = isDark ? '#1e1e2e' : '#fff';
-  const inputBg  = isDark ? '#2a2a3e' : '#f1f3f5';
-  const textCol  = isDark ? '#e9ecef' : '#212529';
-  const mutedCol = isDark ? '#868e96' : '#6c757d';
-
-  const goalMs = personalGoals[activeCategoryId];
-
-  useFocusEffect(useCallback(() => {
-    getSolves(activeUserId, activeCategoryId).then(solves => {
-      if (solves.length >= 5) {
-        const recent = solves.slice(0, 5).map(s => s.time).sort((a, b) => a - b);
-        const ao5 = (recent[1] + recent[2] + recent[3]) / 3;
-        setCurrentAo5(ao5);
-      } else {
-        setCurrentAo5(null);
-      }
-    });
-  }, [activeUserId, activeCategoryId]));
-
-  const handleSetGoal = () => {
-    const secs = parseFloat(inputVal.replace(',', '.'));
-    if (isNaN(secs) || secs <= 0) {
-      Alert.alert('Invalid', 'Enter a valid time in seconds (e.g. 15)');
-      return;
-    }
-    setGoal(activeCategoryId, Math.round(secs * 1000));
-    setInputVal('');
-  };
-
-  // Progress: 0–1, how close avg is to goal (inverted: closer = higher bar)
-  const progress = goalMs && currentAo5
-    ? Math.min(1, Math.max(0, 1 - (currentAo5 - goalMs) / goalMs))
-    : null;
-  const progressColor = progress !== null
-    ? progress >= 1 ? '#37b24d' : progress >= 0.7 ? '#ffd700' : accent
-    : accent;
-
-  return (
-    <View style={[styles.card, { backgroundColor: cardBg }, styles.goalCard]}>
-      <View style={styles.sectionHeaderRow}>
-        <Ionicons name="flag-outline" size={18} color={accent} />
-        <Text style={[styles.sectionTitle, { color: textCol }]}>
-          Personal Goal — {activeCategoryId}
-        </Text>
-      </View>
-
-      {goalMs ? (
-        <>
-          <Text style={[styles.goalTarget, { color: accent }]}>
-            🎯 Target: {(goalMs / 1000).toFixed(2)}s
-          </Text>
-
-          {currentAo5 !== null ? (
-            <>
-              <Text style={[styles.goalCurrent, { color: mutedCol }]}>
-                Your Ao5: {formatTime(Math.round(currentAo5))}
-              </Text>
-              <View style={[styles.progressTrack, { backgroundColor: isDark ? '#2a2a3e' : '#e9ecef' }]}>
-                <View style={[styles.progressFill, {
-                  width: `${(progress ?? 0) * 100}%`,
-                  backgroundColor: progressColor,
-                }]} />
-              </View>
-              {progress !== null && progress >= 1 && (
-                <Text style={[styles.goalAchieved, { color: '#37b24d' }]}>✅ Goal achieved!</Text>
-              )}
-            </>
-          ) : (
-            <Text style={[styles.goalCurrent, { color: mutedCol }]}>
-              Need 5+ solves for Ao5
-            </Text>
-          )}
-
-          <Pressable onPress={() => setGoal(activeCategoryId, 0)} style={styles.changeGoalBtn}>
-            <Text style={{ color: mutedCol, fontSize: 12 }}>Change goal</Text>
-          </Pressable>
-        </>
-      ) : (
-        <View style={styles.goalInputRow}>
-          <View style={[styles.inputWrap, { backgroundColor: inputBg, flex: 1 }]}>
-            <Ionicons name="timer-outline" size={16} color={mutedCol} style={styles.inputIcon} />
-            <TextInput
-              style={[styles.input, { color: textCol }]}
-              placeholder={`Target in seconds (e.g. 15)`}
-              placeholderTextColor={mutedCol}
-              value={inputVal}
-              onChangeText={setInputVal}
-              keyboardType="decimal-pad"
-            />
-          </View>
-          <Pressable
-            style={({ pressed }) => [styles.goalSetBtn, { backgroundColor: accent, opacity: pressed ? 0.8 : 1 }]}
-            onPress={handleSetGoal}
-          >
-            <Text style={styles.goalSetBtnText}>Set</Text>
-          </Pressable>
-        </View>
-      )}
-    </View>
-  );
-}
-
-// ─── Achievements Grid ────────────────────────────────────────────────────────
-function AchievementsGrid({ isDark }: { isDark: boolean }) {
-  const { achievements } = useGamificationStore();
-  const cardBg  = isDark ? '#1e1e2e' : '#fff';
-  const textCol = isDark ? '#e9ecef' : '#212529';
-  const mutedCol= isDark ? '#868e96' : '#6c757d';
-
-  return (
-    <View style={[styles.card, { backgroundColor: cardBg, padding: 16 }]}>
-      <View style={[styles.sectionHeaderRow, { marginBottom: 16 }]}>
-        <Ionicons name="trophy-outline" size={18} color="#ffd700" />
-        <Text style={[styles.sectionTitle, { color: textCol }]}>Achievements</Text>
-      </View>
-
-      <View style={styles.achieveGrid}>
-        {achievements.map(ach => {
-          const unlocked = !!ach.unlockedAt;
-          const dateStr = unlocked
-            ? new Date(ach.unlockedAt!).toLocaleDateString()
-            : null;
-
-          return (
-            <View
-              key={ach.id}
-              style={[
-                styles.achieveCard,
-                { width: CARD_SIZE, backgroundColor: isDark ? '#2a2a3e' : '#f8f9fa' },
-                unlocked && styles.achieveCardUnlocked,
-                unlocked && { borderColor: ach.color + '66' },
-              ]}
-            >
-              {/* Medal icon */}
-              <View style={[
-                styles.achieveIconBg,
-                { backgroundColor: unlocked ? ach.color + '25' : (isDark ? '#1e1e2e' : '#e9ecef') },
-              ]}>
-                {unlocked ? (
-                  <Ionicons name={ach.icon as any} size={26} color={ach.color} />
-                ) : (
-                  <Ionicons name="lock-closed-outline" size={22} color={mutedCol} />
-                )}
-              </View>
-
-              {/* Title */}
-              <Text
-                numberOfLines={2}
-                style={[
-                  styles.achieveTitle,
-                  { color: unlocked ? textCol : mutedCol },
-                  unlocked && { fontWeight: '700' },
-                ]}
-              >
-                {ach.title}
-              </Text>
-
-              {/* Date or lock */}
-              {unlocked && dateStr ? (
-                <Text style={[styles.achieveDate, { color: ach.color }]}>{dateStr}</Text>
-              ) : (
-                <Text style={[styles.achieveDate, { color: mutedCol, opacity: 0.6 }]} numberOfLines={2}>
-                  {ach.description}
-                </Text>
-              )}
-            </View>
-          );
-        })}
-      </View>
-    </View>
-  );
-}
-
 // ─── Logged-in Profile Card ───────────────────────────────────────────────────
 function ProfileCard({ isDark }: { isDark: boolean }) {
   const user = useAppStore(s => s.supabaseUser);
@@ -364,9 +131,8 @@ export default function ProfileScreen() {
   console.log('[ProfileScreen] mounted');
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const supabaseUser = useAppStore(s => s.supabaseUser);
-  const accent  = isDark ? '#4dabf7' : '#228be6';
   const bg      = isDark ? '#121212' : '#f0f4f8';
   const cardBg  = isDark ? '#1e1e2e' : '#fff';
   const textCol = isDark ? '#e9ecef' : '#212529';
@@ -380,46 +146,8 @@ export default function ProfileScreen() {
         contentContainerStyle={styles.contentContainer}
         keyboardShouldPersistTaps="handled"
       >
-        {/* ── Streak Banner ──────────────────────────────── */}
-      <StreakHeader isDark={isDark} />
-
       {/* ── Auth / Profile ────────────────────────────── */}
       {supabaseUser ? <ProfileCard isDark={isDark} /> : <AuthForm isDark={isDark} />}
-
-      {/* ── Personal Goal ─────────────────────────────── */}
-      <GoalSection isDark={isDark} />
-
-      {/* ── Achievements Grid ─────────────────────────── */}
-      <AchievementsGrid isDark={isDark} />
-
-      {/* ── Language Selector ─────────────────────────── */}
-      <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { color: textCol, paddingLeft: 4 }]}>
-          🌐 {t('profile.selectLanguage')}
-        </Text>
-        <View style={[styles.card, { backgroundColor: cardBg }]}>
-          {LANGUAGES.map((lang, index) => (
-            <Pressable
-              key={lang.code}
-              style={({ hovered, pressed }) => [
-                styles.langRow,
-                index < LANGUAGES.length - 1 && [styles.langRowBorder, { borderBottomColor: isDark ? '#333' : '#e9ecef' }],
-                hovered && Platform.OS === 'web' && { backgroundColor: isDark ? '#2a2a3e' : '#f1f3f5' },
-                pressed && { opacity: 0.7 },
-              ]}
-              onPress={() => i18n.changeLanguage(lang.code)}
-            >
-              <View style={styles.langInfo}>
-                <Text style={styles.langFlag}>{lang.flag}</Text>
-                <Text style={[styles.langLabel, { color: textCol }]}>{lang.label}</Text>
-              </View>
-              {i18n.language === lang.code && (
-                <Ionicons name="checkmark-circle" size={24} color={accent} />
-              )}
-            </Pressable>
-          ))}
-        </View>
-      </View>
 
       {/* ── App Info ──────────────────────────────────── */}
       <View style={styles.section}>
@@ -429,7 +157,7 @@ export default function ProfileScreen() {
         <View style={[styles.card, { backgroundColor: cardBg }]}>
           <View style={styles.infoRow}>
             <Text style={[styles.infoLabel, { color: mutedCol }]}>CubeTimer</Text>
-            <Text style={[styles.infoValue, { color: textCol }]}>v1.1.0</Text>
+            <Text style={[styles.infoValue, { color: textCol }]}>v1.2.0</Text>
           </View>
           <View style={[styles.infoRow, { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: isDark ? '#333' : '#e9ecef' }]}>
             <Text style={[styles.infoLabel, { color: mutedCol }]}>Backend</Text>

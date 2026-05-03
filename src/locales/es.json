@@ -5,7 +5,20 @@
     "stats": "Stats",
     "train": "Entrena",
     "learn": "Aprender",
-    "profile": "Perfil"
+    "profile": "Perfil",
+    "achievements": "Logros"
+  },
+  "settings": {
+    "title": "Ajustes",
+    "language": "Idioma",
+    "appearance": "Apariencia",
+    "darkMode": "Modo Oscuro",
+    "lightMode": "Modo Claro",
+    "systemDefault": "Sistema",
+    "timer": "Cronómetro",
+    "inspectionSound": "Sonido de Inspección",
+    "vibration": "Vibración",
+    "about": "Acerca de"
   },
   "timer": {
     "holdToStart": "Mantén presionado el espacio",

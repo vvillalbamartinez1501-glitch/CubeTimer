@@ -3,6 +3,7 @@ import { StyleSheet, Text, View, Pressable, useColorScheme, Modal, TextInput, Fl
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
+import { useRouter } from 'expo-router'; // Added import
 import { CategorySelector } from './CategorySelector';
 import { useAppStore } from '../store/useAppStore';
 
@@ -15,6 +16,7 @@ export const Header: React.FC<HeaderProps> = ({ titleKey }) => {
   const isDark = colorScheme === 'dark';
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+  const router = useRouter(); // Added hook
 
   const { 
     sessions, activeSessionId, activeCategoryId,
@@ -98,10 +100,10 @@ export const Header: React.FC<HeaderProps> = ({ titleKey }) => {
 
       {/* Derecha: Iconos */}
       <View style={styles.headerRight}>
-        <Pressable style={styles.iconButton}>
+        <Pressable style={styles.iconButton} onPress={() => router.push('/settings')}>
           <Ionicons name="settings-outline" size={24} color={isDark ? '#fff' : '#000'} />
         </Pressable>
-        <Pressable style={styles.iconButton}>
+        <Pressable style={styles.iconButton} onPress={() => router.push('/(tabs)/profile')}>
           <Ionicons name="person-outline" size={24} color={isDark ? '#fff' : '#000'} />
         </Pressable>
       </View>
