@@ -24,12 +24,12 @@ export default function HistoryScreen() {
   const [solves, setSolves] = useState<SolveRecord[]>([]);
 
   const fetchSolves = async () => {
-    if (Platform.OS === 'web') return; // En web no tenemos SQLite activo aún
     const data = await getSolves(activeUserId, activeCategoryId);
     if (data) {
       setSolves(data as SolveRecord[]);
     }
   };
+
 
   // Se ejecuta cada vez que la pantalla gana el foco o cambia el usuario/categoría
   useFocusEffect(

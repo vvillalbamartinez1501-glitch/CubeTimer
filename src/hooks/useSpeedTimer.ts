@@ -1,71 +1,97 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Platform } from 'react-native';
 
 export type TimerState = 'idle' | 'inspecting' | 'holding' | 'running' | 'finished';
 
-interface TimerOptions {
+interface UseSpeedTimerProps {
   isInspectionEnabled: boolean;
   onFinish?: (time: number) => void;
 }
 
 /**
  * useSpeedTimer: Custom hook that encapsulates speedcubing timer logic.
- * Handles states, intervals, and web keyboard listeners.
+ * Uses requestAnimationFrame for smooth UI updates and handles hybrid platform events.
  */
-export function useSpeedTimer({ isInspectionEnabled, onFinish }: TimerOptions) {
+export function useSpeedTimer({ isInspectionEnabled, onFinish }: UseSpeedTimerProps) {
   const [timerState, setTimerState] = useState<TimerState>('idle');
-  const [displayTime, setDisplayTime] = useState(0); // Stores the final time after a solve
-  const [runningTime, setRunningTime] = useState(0); // Tracks current time during execution
-  const [inspectionTime, setInspectionTime] = useState(15);
+  const [displayTime, setDisplayTime] = useState(0);
+  const [isInspecting, setIsInspecting] = useState(false);
   const [hasPenalty, setHasPenalty] = useState(false);
 
-  // Refs for logic consistency and preventing stale closures in listeners
+  // References for logic (avoids re-renders and stale closures)
   const stateRef = useRef<TimerState>('idle');
   const startTimeRef = useRef<number>(0);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const inspectionRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const rafRef = useRef<number | null>(null);
+  const inspectionIntervalRef = useRef<any>(null);
   const hasPenaltyRef = useRef(false);
 
-  const setTimerStateSync = useCallback((state: TimerState) => {
-    stateRef.current = state;
-    setTimerState(state);
-  }, []);
+  // Sync state helper
+  const setTimerStateSync = (s: TimerState) => {
+    stateRef.current = s;
+    setTimerState(s);
+  };
 
-  const stopInterval = useCallback(() => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
+  // ─── Animation Frame Logic (Smoother UI) ─────────────────────────────────
+  const updateRunningTime = useCallback(() => {
+    if (stateRef.current === 'running') {
+      const now = Date.now();
+      const diff = now - startTimeRef.current;
+      setDisplayTime(diff);
+      rafRef.current = requestAnimationFrame(updateRunningTime);
     }
   }, []);
 
-  const startInspection = useCallback(() => {
-    setTimerStateSync('inspecting');
-    setInspectionTime(15);
-    hasPenaltyRef.current = false;
+  const stopRAF = () => {
+    if (rafRef.current !== null) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+  };
+
+  // ─── Inspection Logic ────────────────────────────────────────────────────
+  const startInspection = () => {
+    let timeLeft = 15;
+    setIsInspecting(true);
+    setDisplayTime(timeLeft);
     setHasPenalty(false);
+    hasPenaltyRef.current = false;
 
-    if (inspectionRef.current) clearInterval(inspectionRef.current);
-    inspectionRef.current = setInterval(() => {
-      setInspectionTime((prev) => {
-        const next = prev - 1;
-        if (next <= 0) {
-          hasPenaltyRef.current = true;
+    if (inspectionIntervalRef.current) clearInterval(inspectionIntervalRef.current);
+    inspectionIntervalRef.current = setInterval(() => {
+      timeLeft -= 1;
+      if (timeLeft <= 0) {
+        if (timeLeft === 0) {
+          setDisplayTime(0);
+        } else if (timeLeft === -1 || timeLeft === -2) {
           setHasPenalty(true);
+          hasPenaltyRef.current = true;
+          setDisplayTime(0); // Show 0 during penalty phase
+        } else {
+          // Automatic DNF could be handled here
+          clearInterval(inspectionIntervalRef.current);
         }
-        return next;
-      });
+      } else {
+        setDisplayTime(timeLeft);
+      }
     }, 1000);
-  }, [setTimerStateSync]);
+  };
 
+  const stopInspection = () => {
+    if (inspectionIntervalRef.current) {
+      clearInterval(inspectionIntervalRef.current);
+      inspectionIntervalRef.current = null;
+    }
+    setIsInspecting(false);
+  };
+
+  // ─── Event Handlers ──────────────────────────────────────────────────────
   const onPressDown = useCallback(() => {
     const currentState = stateRef.current;
 
-    // Reset if finished
     if (currentState === 'finished') {
       setDisplayTime(0);
-      setRunningTime(0);
-      hasPenaltyRef.current = false;
       setHasPenalty(false);
+      hasPenaltyRef.current = false;
       setTimerStateSync('idle');
       return;
     }
@@ -73,54 +99,57 @@ export function useSpeedTimer({ isInspectionEnabled, onFinish }: TimerOptions) {
     if (currentState === 'idle') {
       if (isInspectionEnabled) {
         startInspection();
+        setTimerStateSync('inspecting');
       } else {
-        hasPenaltyRef.current = false;
-        setHasPenalty(false);
         setTimerStateSync('holding');
       }
-    } else if (currentState === 'inspecting') {
-      if (inspectionRef.current) clearInterval(inspectionRef.current);
+      return;
+    }
+
+    if (currentState === 'inspecting') {
       setTimerStateSync('holding');
-    } else if (currentState === 'running') {
-      stopInterval();
-      const elapsed = Date.now() - startTimeRef.current;
-      const finalTime = hasPenaltyRef.current ? elapsed + 2000 : elapsed;
+      return;
+    }
+
+    if (currentState === 'running') {
+      stopRAF();
+      const finalTime = Date.now() - startTimeRef.current;
       setDisplayTime(finalTime);
-      setRunningTime(0);
       setTimerStateSync('finished');
       if (onFinish) onFinish(finalTime);
+      return;
     }
-  }, [isInspectionEnabled, setTimerStateSync, startInspection, stopInterval, onFinish]);
+  }, [isInspectionEnabled, onFinish]);
 
   const onPressUp = useCallback(() => {
-    if (stateRef.current !== 'holding') return;
+    const currentState = stateRef.current;
 
-    startTimeRef.current = Date.now();
-    setRunningTime(0);
-    setTimerStateSync('running');
-
-    if (intervalRef.current) clearInterval(intervalRef.current);
-    intervalRef.current = setInterval(() => {
-      setRunningTime(Date.now() - startTimeRef.current);
-    }, 10); // 10ms for high precision
-  }, [setTimerStateSync]);
+    if (currentState === 'holding') {
+      stopInspection();
+      startTimeRef.current = Date.now();
+      setTimerStateSync('running');
+      rafRef.current = requestAnimationFrame(updateRunningTime);
+    }
+  }, [updateRunningTime]);
 
   const resetTimer = useCallback(() => {
-    stopInterval();
-    if (inspectionRef.current) clearInterval(inspectionRef.current);
+    stopRAF();
+    stopInspection();
     setDisplayTime(0);
-    setRunningTime(0);
-    setInspectionTime(15);
-    hasPenaltyRef.current = false;
     setHasPenalty(false);
+    hasPenaltyRef.current = false;
     setTimerStateSync('idle');
-  }, [stopInterval, setTimerStateSync]);
-
-  const addPenalty = useCallback(() => {
-    setDisplayTime((prev) => prev + 2000);
   }, []);
 
-  // ─── Web Keyboard Handling ──────────────────────────────────────────
+  const addPenalty = useCallback(() => {
+    if (stateRef.current === 'finished') {
+      setHasPenalty(true);
+      hasPenaltyRef.current = true;
+      setDisplayTime(prev => prev + 2000);
+    }
+  }, []);
+
+  // ─── Web Keyboard Support ───────────────────────────────────────────────
   const pressDownRef = useRef(onPressDown);
   const pressUpRef = useRef(onPressUp);
 
@@ -131,14 +160,17 @@ export function useSpeedTimer({ isInspectionEnabled, onFinish }: TimerOptions) {
 
   useEffect(() => {
     if (Platform.OS !== 'web') return;
-    
+
     const onKeyDown = (e: KeyboardEvent) => {
+      // Avoid interference if typing in an input (though not many here)
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      
       if (e.code === 'Space') {
         e.preventDefault();
         if (!e.repeat) pressDownRef.current();
       }
     };
-    
+
     const onKeyUp = (e: KeyboardEvent) => {
       if (e.code === 'Space') {
         e.preventDefault();
@@ -148,36 +180,23 @@ export function useSpeedTimer({ isInspectionEnabled, onFinish }: TimerOptions) {
 
     window.addEventListener('keydown', onKeyDown);
     window.addEventListener('keyup', onKeyUp);
-    
+
     return () => {
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('keyup', onKeyUp);
+      stopRAF();
+      stopInspection();
     };
   }, []);
 
-  // Timer Cleanup
-  useEffect(() => {
-    return () => {
-      stopInterval();
-      if (inspectionRef.current) clearInterval(inspectionRef.current);
-    };
-  }, [stopInterval]);
-
-  // Derive display text time
-  const currentTime = timerState === 'running' ? runningTime 
-    : timerState === 'inspecting' ? inspectionTime 
-    : displayTime;
-
   return {
     timerState,
-    displayTime: currentTime,
-    isInspecting: timerState === 'inspecting',
+    displayTime,
+    isInspecting,
     hasPenalty,
-    inspectionTime,
     onPressDown,
     onPressUp,
     resetTimer,
     addPenalty,
-    setFinalTime: setDisplayTime,
   };
 }
