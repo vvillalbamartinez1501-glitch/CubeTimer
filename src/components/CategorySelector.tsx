@@ -144,24 +144,23 @@ export const CategorySelector = () => {
 const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
-    marginBottom: 10,
     zIndex: 10,
   },
   selectorButton: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#e9ecef',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 20,
-    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    gap: 4,
   },
   selectorButtonDark: {
     backgroundColor: '#343a40',
   },
   selectorText: {
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontSize: 14,
+    fontWeight: '600',
   },
   selectorButtonHovered: {
     backgroundColor: '#dee2e6',
