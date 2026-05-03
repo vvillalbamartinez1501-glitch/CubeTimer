@@ -12,7 +12,6 @@ import { supabase } from '../src/lib/supabase';
 import { useAppStore } from '../src/store/useAppStore';
 
 export default function RootLayout() {
-  console.log('[RootLayout] mounting');
   const colorScheme = useColorScheme();
   const setSupabaseUser = useAppStore(s => s.setSupabaseUser);
 

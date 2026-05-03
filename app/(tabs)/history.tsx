@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { StyleSheet, Text, View, FlatList, Pressable, useColorScheme, Platform } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,7 +16,6 @@ interface SolveRecord {
 }
 
 export default function HistoryScreen() {
-  console.log('[HistoryScreen] mounted');
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const { t } = useTranslation();
@@ -39,29 +38,26 @@ export default function HistoryScreen() {
     }, [activeUserId, activeCategoryId])
   );
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = useCallback(async (id: number) => {
     await deleteSolve(id);
-    setSolves(solves.filter(s => s.id !== id));
-  };
+    setSolves(prev => prev.filter(s => s.id !== id));
+  }, []);
 
-  const calculateBest = () => {
+  // ── useMemo: solo se recalcula cuando cambia la lista de solves ───────────
+  const bestTime = useMemo(() => {
     if (solves.length === 0) return '--';
     const best = Math.min(...solves.map(s => s.time));
     return formatTime(best);
-  };
+  }, [solves]);
 
-  const calculateAo5 = () => {
+  const ao5 = useMemo(() => {
     if (solves.length < 5) return '--';
-    // Tomamos los 5 más recientes (están ordenados de más nuevo a más viejo)
-    const recent5 = solves.slice(0, 5).map(s => s.time);
-    // Ordenamos de menor a mayor
-    recent5.sort((a, b) => a - b);
-    // Excluimos el mejor (index 0) y el peor (index 4)
+    const recent5 = solves.slice(0, 5).map(s => s.time).sort((a, b) => a - b);
     const sum = recent5[1] + recent5[2] + recent5[3];
     return formatTime(Math.floor(sum / 3));
-  };
+  }, [solves]);
 
-  const renderItem = ({ item }: { item: SolveRecord }) => {
+  const renderItem = useCallback(({ item }: { item: SolveRecord }) => {
     const dateObj = new Date(item.date);
     const dateStr = dateObj.toLocaleDateString();
     const timeStr = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -84,7 +80,7 @@ export default function HistoryScreen() {
         </Pressable>
       </View>
     );
-  };
+  }, [isDark, handleDelete]);
 
   return (
     <View style={[styles.container, isDark && styles.containerDark]}>
@@ -95,11 +91,11 @@ export default function HistoryScreen() {
       <View style={[styles.statsContainer, isDark && styles.statsContainerDark]}>
         <View style={styles.statBox}>
           <Text style={styles.statLabel}>{t('history.bestTime')}</Text>
-          <Text style={[styles.statValue, isDark && styles.textDark]}>{calculateBest()}</Text>
+          <Text style={[styles.statValue, isDark && styles.textDark]}>{bestTime}</Text>
         </View>
         <View style={styles.statBox}>
           <Text style={styles.statLabel}>{t('history.ao5')}</Text>
-          <Text style={[styles.statValue, isDark && styles.textDark]}>{calculateAo5()}</Text>
+          <Text style={[styles.statValue, isDark && styles.textDark]}>{ao5}</Text>
         </View>
       </View>
 
