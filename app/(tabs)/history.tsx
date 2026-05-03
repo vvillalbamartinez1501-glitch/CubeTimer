@@ -40,9 +40,30 @@ export default function HistoryScreen() {
   );
 
   const handleDelete = useCallback(async (id: number) => {
-    await deleteSolve(id);
-    setSolves(prev => prev.filter(s => s.id !== id));
-  }, []);
+    Alert.alert(
+      t('history.deleteConfirmTitle'),
+      t('history.deleteConfirmMsg'),
+      [
+        { text: t('actions.cancel'), style: 'cancel' },
+        { 
+          text: t('actions.delete'), 
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteSolve(id);
+              setSolves(prev => prev.filter(s => s.id !== id));
+              Alert.alert(
+                t('actions.success'), 
+                t('history.deletedSuccess')
+              );
+            } catch (e) {
+              Alert.alert('Error', 'No se pudo eliminar el registro');
+            }
+          }
+        },
+      ]
+    );
+  }, [t]);
 
   // ── useMemo: solo se recalcula cuando cambia la lista de solves ───────────
   const bestTime = useMemo(() => {

@@ -21,14 +21,18 @@
     "delete": "Eliminar",
     "plus2": "+2s",
     "confirm": "Confirmar",
-    "cancel": "Cancelar"
+    "cancel": "Cancelar",
+    "success": "Éxito"
   },
   "history": {
     "title": "Historial de Tiempos",
     "bestTime": "Mejor Tiempo",
     "ao5": "Ao5",
     "empty": "No hay tiempos guardados en esta categoría.",
-    "webNotAvailable": "El guardado local no está disponible en la versión Web por ahora."
+    "webNotAvailable": "El guardado local no está disponible en la versión Web por ahora.",
+    "deleteConfirmTitle": "¿Eliminar registro?",
+    "deleteConfirmMsg": "¿Estás seguro de que quieres eliminar este tiempo? Esta acción no se puede deshacer.",
+    "deletedSuccess": "Registro eliminado correctamente"
   },
   "learn": {
     "basic": "Básico",

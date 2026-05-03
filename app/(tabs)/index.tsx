@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CategorySelector } from '../../src/components/CategorySelector';
-import { getCategorySolveCount, getSolves, getTotalSolves, saveSolve } from '../../src/database/operations';
+import { getCategorySolveCount, getSolves, getTotalSolves, saveSolve, deleteSolve } from '../../src/database/operations';
 import { useSpeedTimer } from '../../src/hooks/useSpeedTimer';
 import { useGamificationStore } from '../../src/store/gamificationStore';
 import { Header } from '../../src/components/Header';
@@ -103,6 +103,29 @@ export default function TimerScreen() {
     persist();
   }, [displayTime, currentScramble, activeUserId, activeCategoryId, handleDiscard, updateStreak, checkAchievements, fetchHistory]);
 
+  const handleDelete = useCallback(async (id: number) => {
+    Alert.alert(
+      t('history.deleteConfirmTitle'),
+      t('history.deleteConfirmMsg'),
+      [
+        { text: t('actions.cancel'), style: 'cancel' },
+        { 
+          text: t('actions.delete'), 
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteSolve(id);
+              fetchHistory();
+              Alert.alert(t('actions.success'), t('history.deletedSuccess'));
+            } catch (e) {
+              Alert.alert('Error', 'No se pudo eliminar');
+            }
+          }
+        },
+      ]
+    );
+  }, [t, fetchHistory]);
+
   // ─── Visuales ───────────────────────────────────────────────────────────────
   const timerColor = useMemo(() => {
     if (timerState === 'holding') return '#00C851';
@@ -147,6 +170,9 @@ export default function TimerScreen() {
                   <Text style={[styles.solveTime, isDark && styles.textDark]}>
                     {formatTimeLocal(solve.time)}
                   </Text>
+                  <Pressable onPress={() => handleDelete(solve.id)} style={styles.sidebarDeleteBtn}>
+                    <Ionicons name="trash-outline" size={14} color="#ff3b30" />
+                  </Pressable>
                 </View>
               ))}
               {solves.length === 0 && (
@@ -297,6 +323,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#495057',
+  },
+  sidebarDeleteBtn: {
+    padding: 4,
   },
   noSolvesText: {
     fontSize: 12,
