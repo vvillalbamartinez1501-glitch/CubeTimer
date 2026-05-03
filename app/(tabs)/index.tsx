@@ -39,7 +39,10 @@ export default function TimerScreen() {
   const { t }       = useTranslation();
   const insets      = useSafeAreaInsets();
 
-  const { currentScramble, generateNewScramble, activeUserId, activeCategoryId, activeSessionId } = useAppStore();
+  const { 
+    currentScramble, generateNewScramble, activeUserId, activeCategoryId, 
+    activeSessionId, previousSessionId, setActiveSession 
+  } = useAppStore();
   const { updateStreak, checkAchievements } = useGamificationStore();
 
   const [isInspectionEnabled, setIsInspectionEnabled] = useState(false);
@@ -72,6 +75,13 @@ export default function TimerScreen() {
   } = useSpeedTimer({
     isInspectionEnabled,
   });
+
+  // ─── Auto-revert 'All Sessions' to previous session when starting a solve ──
+  React.useEffect(() => {
+    if ((timerState === 'holding' || timerState === 'running' || isInspecting) && activeSessionId === 'ALL_SESSIONS') {
+      setActiveSession(previousSessionId || `default-${activeCategoryId}`);
+    }
+  }, [timerState, isInspecting, activeSessionId, previousSessionId, activeCategoryId, setActiveSession]);
 
   // ─── Acciones Post-Solve ────────────────────────────────────────────────────
   const handleDiscard = useCallback(() => {

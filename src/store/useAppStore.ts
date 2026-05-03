@@ -19,6 +19,7 @@ interface AppState {
   customCategoryName: string;
   currentScramble: string;
   activeSessionId: string;
+  previousSessionId: string | null;
   sessions: Session[];
 
   // ── Actions ──
@@ -45,6 +46,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   customCategoryName: '',
   currentScramble: generateScramble('3x3'),
   activeSessionId: 'default-3x3',
+  previousSessionId: null,
   sessions: [],
 
   generateNewScramble: (puzzleId?: string) => {
@@ -71,7 +73,8 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ 
       activeCategoryId: id, 
       customCategoryName: customName || '',
-      activeSessionId: session.id 
+      activeSessionId: session.id,
+      previousSessionId: null
     });
     get().generateNewScramble(id);
   },
@@ -154,10 +157,15 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   setActiveSession: (id: string) => {
-    set({ activeSessionId: id });
+    const currentActive = get().activeSessionId;
+    if (id === 'ALL_SESSIONS') {
+      set({ activeSessionId: id, previousSessionId: currentActive });
+    } else {
+      set({ activeSessionId: id, previousSessionId: null });
+    }
   },
 
-  // ── Auth defaults ──
+  // ── Auth ──
   supabaseUser: null,
   setSupabaseUser: (user) => set({ supabaseUser: user }),
 }));

@@ -94,6 +94,8 @@ export const getSolves = async (
   categoryId: string,
   sessionId?: string, // Added parameter
 ): Promise<SolveRecord[]> => {
+  const isAllSessions = sessionId === 'ALL_SESSIONS';
+
   try {
     const { data: { session } } = await supabase.auth.getSession();
 
@@ -105,7 +107,7 @@ export const getSolves = async (
         .eq('user_id', session.user.id)
         .eq('category', categoryId);
       
-      if (sessionId) {
+      if (sessionId && !isAllSessions) {
         query = query.eq('session_id', sessionId);
       }
 
@@ -129,7 +131,7 @@ export const getSolves = async (
         const unsyncedLocal = all.filter(
           s => s.userId === userId && 
                s.categoryId === categoryId && 
-               (!sessionId || s.sessionId === sessionId) &&
+               (!sessionId || isAllSessions || s.sessionId === sessionId) &&
                !s.synced,
         );
         const merged = [
@@ -139,7 +141,7 @@ export const getSolves = async (
 
         // Persist the merged set
         const otherSolves = all.filter(
-          s => !(s.userId === userId && s.categoryId === categoryId && (!sessionId || s.sessionId === sessionId)),
+          s => !(s.userId === userId && s.categoryId === categoryId && (!sessionId || isAllSessions || s.sessionId === sessionId)),
         );
         await _saveAll([...otherSolves, ...merged]);
 
@@ -156,7 +158,7 @@ export const getSolves = async (
     .filter(s => 
       s.userId === userId && 
       s.categoryId === categoryId && 
-      (!sessionId || s.sessionId === sessionId || (!s.sessionId && sessionId === 'default'))
+      (!sessionId || isAllSessions || s.sessionId === sessionId || (!s.sessionId && sessionId === 'default'))
     )
     .sort((a, b) => b.id - a.id);
 };
@@ -192,16 +194,23 @@ export const clearSessionSolves = async (
   categoryId: string,
   sessionId: string,
 ): Promise<void> => {
+  const isAllSessions = sessionId === 'ALL_SESSIONS';
+
   try {
     const { data: { session } } = await supabase.auth.getSession();
 
     if (session) {
-      const { error } = await supabase
+      let query = supabase
         .from('solves')
         .delete()
         .eq('user_id', session.user.id)
-        .eq('category', categoryId)
-        .eq('session_id', sessionId);
+        .eq('category', categoryId);
+
+      if (!isAllSessions) {
+        query = query.eq('session_id', sessionId);
+      }
+
+      const { error } = await query;
 
       if (error) console.warn('⚠️ Error al borrar sesión en Supabase:', error.message);
       else console.log('☁️ Sesión eliminada de Supabase.');
@@ -212,9 +221,12 @@ export const clearSessionSolves = async (
 
   // Always delete locally
   const all = await _loadAll();
-  const filtered = all.filter(s => 
-    !(s.userId === userId && s.categoryId === categoryId && s.sessionId === sessionId)
-  );
+  const filtered = all.filter(s => {
+    const matchCategory = s.userId === userId && s.categoryId === categoryId;
+    if (isAllSessions) return !matchCategory;
+    return !(matchCategory && s.sessionId === sessionId);
+  });
+  
   await _saveAll(filtered);
   console.log(`🗑️ Sesión ${sessionId} eliminada de AsyncStorage.`);
 };

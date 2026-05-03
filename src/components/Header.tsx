@@ -33,6 +33,11 @@ export const Header: React.FC<HeaderProps> = ({ titleKey }) => {
   const currentSession = sessions.find(s => s.id === activeSessionId) || sessions.find(s => s.categoryId === activeCategoryId);
   const categorySessions = sessions.filter(s => s.categoryId === activeCategoryId);
 
+  let displaySessionName = currentSession?.name || 'Sesión 1';
+  if (activeSessionId === 'ALL_SESSIONS') {
+    displaySessionName = 'Todas las sesiones';
+  }
+
   const handleCreate = () => {
     if (!newSessionName.trim()) return;
     createSession(newSessionName.trim());
@@ -82,7 +87,7 @@ export const Header: React.FC<HeaderProps> = ({ titleKey }) => {
           onPress={() => setModalVisible(true)}
         >
           <Text style={[styles.sessionPillText, isDark && styles.textDark]}>
-            {currentSession?.name || 'Sesión 1'}
+            {displaySessionName}
           </Text>
           <Ionicons name="chevron-down" size={14} color={isDark ? '#aaa' : '#666'} />
         </Pressable>
@@ -115,6 +120,22 @@ export const Header: React.FC<HeaderProps> = ({ titleKey }) => {
           >
             <Text style={[styles.modalTitle, isDark && styles.textDark]}>Gestionar Sesiones ({activeCategoryId})</Text>
             
+            <Pressable 
+              style={[styles.sessionItem, styles.allSessionsItem]} 
+              onPress={() => { setActiveSession('ALL_SESSIONS'); setModalVisible(false); }}
+            >
+              <View style={styles.sessionSelect}>
+                <Text style={[
+                  styles.sessionName, 
+                  isDark && styles.textDark,
+                  activeSessionId === 'ALL_SESSIONS' && styles.activeSessionText
+                ]}>
+                  Todas las sesiones
+                </Text>
+              </View>
+              <Ionicons name="layers-outline" size={18} color={activeSessionId === 'ALL_SESSIONS' ? '#007aff' : (isDark ? '#fff' : '#000')} />
+            </Pressable>
+
             <FlatList
               data={categorySessions}
               keyExtractor={item => item.id}
@@ -281,6 +302,13 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: '#eee',
     width: '100%',
+  },
+  allSessionsItem: {
+    backgroundColor: 'rgba(0,122,255,0.05)',
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    marginBottom: 5,
+    borderBottomWidth: 0,
   },
   sessionSelect: {
     flex: 1,
