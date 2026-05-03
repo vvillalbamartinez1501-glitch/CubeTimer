@@ -27,7 +27,10 @@ export const generateScramble = (cubeType: string): string => {
     moves = MOVES_3X3;
     // Longitud aleatoria entre 20 y 30
     length = Math.floor(Math.random() * 11) + 20;
-  }
+  }  else if (cubeType === '3x3') {
+    moves = MOVES_3X3;
+    length = 20;
+  } 
 
   let scramble: string[] = [];
 
