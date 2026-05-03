@@ -27,11 +27,16 @@ export function useSpeedTimer({ isInspectionEnabled, onFinish }: UseSpeedTimerPr
 
   const updateRunningTime = useCallback(() => {
     if (stateRef.current === 'running') {
-      const diff = Date.now() - startTimeRef.current;
+      const now = Date.now();
+      const diff = now - startTimeRef.current;
+      if (diff % 100 < 16) { // Log every ~100ms to avoid flooding
+         console.log('[Timer] Ticking, diff:', diff);
+      }
       setDisplayTime(diff);
       rafRef.current = requestAnimationFrame(updateRunningTime);
     }
   }, []);
+
 
   const stopRAF = () => {
     if (rafRef.current !== null) {
