@@ -66,6 +66,7 @@ Inicia el entorno de desarrollo:
 
 Bash
 npx expo start
+
 Visualización:
 
 Móvil: Escanea el código QR con la app Expo Go.
