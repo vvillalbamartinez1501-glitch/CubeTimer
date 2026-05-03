@@ -358,7 +358,8 @@ function ProfileCard({ isDark }: { isDark: boolean }) {
   );
 }
 
-// ─── Main Screen ─────────────────────────────────────────────────────────────
+import { Header } from '../../src/components/Header';
+
 export default function ProfileScreen() {
   console.log('[ProfileScreen] mounted');
   const colorScheme = useColorScheme();
@@ -372,12 +373,14 @@ export default function ProfileScreen() {
   const mutedCol= isDark ? '#868e96' : '#6c757d';
 
   return (
-    <ScrollView
-      style={[styles.container, { backgroundColor: bg }]}
-      contentContainerStyle={styles.contentContainer}
-      keyboardShouldPersistTaps="handled"
-    >
-      {/* ── Streak Banner ──────────────────────────────── */}
+    <View style={{ flex: 1, backgroundColor: bg }}>
+      <Header titleKey="tabs.profile" />
+      <ScrollView
+        style={[styles.container, { backgroundColor: bg }]}
+        contentContainerStyle={styles.contentContainer}
+        keyboardShouldPersistTaps="handled"
+      >
+        {/* ── Streak Banner ──────────────────────────────── */}
       <StreakHeader isDark={isDark} />
 
       {/* ── Auth / Profile ────────────────────────────── */}
@@ -438,7 +441,8 @@ export default function ProfileScreen() {
       </View>
 
       <View style={{ height: 32 }} />
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 

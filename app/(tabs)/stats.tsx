@@ -122,25 +122,26 @@ const Tooltip = ({
 );
 
 // ─── MAIN COMPONENT ──────────────────────────────────────────────────────────
+import { Header } from '../../src/components/Header';
+
 export default function StatsScreen() {
   console.log('[StatsScreen] mounted');
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const { t } = useTranslation();
 
-  const { activeUserId } = useAppStore();
-  const [selectedCategory, setSelectedCategory] = useState('3x3');
+  const { activeUserId, activeCategoryId } = useAppStore();
   const [solves, setSolves] = useState<SolveRecord[]>([]);
   const [activeLinePoint, setActiveLinePoint] = useState<{ value: number; index: number } | null>(null);
 
   // Fetch solves when screen focused or category changes
   useFocusEffect(
     useCallback(() => {
-      getSolves(activeUserId, selectedCategory).then(data => {
+      getSolves(activeUserId, activeCategoryId).then(data => {
         setSolves(data ?? []);
         setActiveLinePoint(null);
       });
-    }, [activeUserId, selectedCategory])
+    }, [activeUserId, activeCategoryId])
   );
 
   // ─── Derived data ──────────────────────────────────────────────────────────
@@ -149,7 +150,7 @@ export default function StatsScreen() {
   const timesMs = chronological.map(s => s.time);
   const timesSec = timesMs.map(toSeconds);
   const ao5Values = computeAo5(timesMs);
-  const mockGlobal = GLOBAL_MOCK[selectedCategory] ?? GLOBAL_MOCK['3x3'];
+  const mockGlobal = GLOBAL_MOCK[activeCategoryId] ?? GLOBAL_MOCK['3x3'];
   const userAvgSec =
     timesMs.length > 0
       ? parseFloat((timesMs.reduce((s, v) => s + v, 0) / timesMs.length / 1000).toFixed(2))
@@ -225,42 +226,17 @@ export default function StatsScreen() {
   const axisColor = isDark ? '#444' : '#ced4da';
 
   return (
-    <ScrollView
-      style={[styles.container, { backgroundColor: bg }]}
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
-    >
-      {/* ── Category Selector ─────────────────────────────────── */}
+    <View style={{ flex: 1, backgroundColor: isDark ? '#121212' : '#f0f4f8' }}>
+      <Header titleKey="tabs.stats" />
       <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.categoryScroll}
-        style={styles.categoryBar}
+        style={[styles.container, { backgroundColor: bg }]}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
       >
-        {CATEGORIES.map(cat => {
-          const active = cat === selectedCategory;
-          return (
-            <Pressable
-              key={cat}
-              onPress={() => setSelectedCategory(cat)}
-              style={({ pressed }) => [
-                styles.categoryChip,
-                active && styles.categoryChipActive,
-                { opacity: pressed ? 0.75 : 1 },
-              ]}
-            >
-              <Text style={[styles.categoryChipText, active && styles.categoryChipTextActive]}>
-                {cat}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </ScrollView>
-
-      {/* ── Empty State ───────────────────────────────────────── */}
-      {solves.length === 0 && (
-        <EmptyState isDark={isDark} t={t} />
-      )}
+        {/* ── Empty State ───────────────────────────────────────── */}
+        {solves.length === 0 && (
+          <EmptyState isDark={isDark} t={t} />
+        )}
 
       {/* ══════════════════════════════════════════════════════════
           CHART A — Personal Progression (Line Chart)
@@ -506,7 +482,8 @@ export default function StatsScreen() {
       )}
 
       <View style={{ height: 32 }} />
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 

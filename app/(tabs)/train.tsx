@@ -301,7 +301,8 @@ function DrillTimerModal({
   );
 }
 
-// ─── Main Screen ─────────────────────────────────────────────────────────────
+import { Header } from '../../src/components/Header';
+
 export default function TrainScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
@@ -335,6 +336,7 @@ export default function TrainScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: bg }]}>
+      <Header titleKey="tabs.train" />
       {/* ── PLL / OLL tabs ── */}
       <View style={[styles.mainTabBar, { backgroundColor: cardBg }]}>
         {(['PLL', 'OLL'] as const).map(t => (

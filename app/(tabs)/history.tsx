@@ -7,6 +7,7 @@ import { useAppStore } from '../../src/store/useAppStore';
 import { getSolves, deleteSolve } from '../../src/database/operations';
 import { formatTime } from '../../src/utils/timeFormat';
 import { CategorySelector } from '../../src/components/CategorySelector';
+import { Header } from '../../src/components/Header';
 
 interface SolveRecord {
   id: number;
@@ -84,9 +85,7 @@ export default function HistoryScreen() {
 
   return (
     <View style={[styles.container, isDark && styles.containerDark]}>
-      <View style={styles.header}>
-        <CategorySelector />
-      </View>
+      <Header titleKey="tabs.history" />
       
       <View style={[styles.statsContainer, isDark && styles.statsContainerDark]}>
         <View style={styles.statBox}>
