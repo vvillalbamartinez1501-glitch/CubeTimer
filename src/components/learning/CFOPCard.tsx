@@ -2,12 +2,15 @@ import React, { memo } from 'react';
 import { View, Text, StyleSheet, Pressable, useColorScheme } from 'react-native';
 import { CFOPCase } from '../../data/cfopFull';
 import { useAppStore } from '../../store/useAppStore';
+import { AlgorithmImage } from './AlgorithmImage';
 
 interface CFOPCardProps {
   item: CFOPCase;
+  type: string;
+  cardWidth: number;
 }
 
-const CFOPCardComponent = ({ item }: CFOPCardProps) => {
+const CFOPCardComponent = ({ item, type, cardWidth }: CFOPCardProps) => {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const { highlightedAlgs, toggleHighlight } = useAppStore();
@@ -15,108 +18,94 @@ const CFOPCardComponent = ({ item }: CFOPCardProps) => {
   const isHighlighted = highlightedAlgs.includes(item.id);
 
   return (
-    <View style={[styles.card, isDark && styles.cardDark]}>
-      {/* Left: Square placeholder for cube */}
-      <View style={[styles.placeholder, isDark && styles.placeholderDark]}>
-        <Text style={[styles.placeholderText, isDark && styles.textDark]}>3x3</Text>
-      </View>
-
-      {/* Center: Case name and algorithm */}
-      <View style={styles.content}>
-        <Text style={[styles.name, isDark && styles.textDark]}>{item.name}</Text>
-        <View style={[styles.algBox, isDark && styles.algBoxDark]}>
-          <Text style={styles.algorithm} numberOfLines={2}>
-            {item.algorithm}
-          </Text>
-        </View>
-      </View>
-
-      {/* Right: Star highlight button */}
+    <Pressable 
+      style={({ pressed }) => [
+        styles.card, 
+        { width: cardWidth },
+        isDark && styles.cardDark,
+        pressed && styles.cardPressed
+      ]}
+    >
+      {/* Top Right: Star highlight button */}
       <Pressable
-        style={({ pressed }) => [
-          styles.starButton,
-          pressed && styles.starButtonPressed
-        ]}
+        style={styles.starButton}
         onPress={() => toggleHighlight(item.id)}
         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
       >
         <Text style={styles.starIcon}>{isHighlighted ? '⭐' : '☆'}</Text>
       </Pressable>
-    </View>
+
+      {/* Top: Image */}
+      <View style={styles.imageContainer}>
+        <AlgorithmImage alg={item.algorithm} type={type} size={cardWidth * 0.55} />
+      </View>
+
+      {/* Center: Case name */}
+      <Text style={[styles.name, isDark && styles.textDark]} numberOfLines={1}>
+        {item.name}
+      </Text>
+
+      {/* Bottom: Algorithm */}
+      <Text style={[styles.algorithm, isDark && styles.algorithmDark]} numberOfLines={2}>
+        {item.algorithm}
+      </Text>
+    </Pressable>
   );
 };
 
 const styles = StyleSheet.create({
   card: {
-    flexDirection: 'row',
-    alignItems: 'center',
     backgroundColor: '#fff',
     borderRadius: 12,
     padding: 12,
-    marginBottom: 10,
+    marginBottom: 12,
+    alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 1.5 },
+    shadowOpacity: 0.1,
     shadowRadius: 3,
-    elevation: 2,
+    elevation: 3, // Android shadow
+    position: 'relative',
   },
   cardDark: {
     backgroundColor: '#1e1e1e',
   },
-  placeholder: {
-    width: 56,
-    height: 56,
-    borderRadius: 8,
-    backgroundColor: '#f1f3f5',
+  cardPressed: {
+    opacity: 0.8,
+    transform: [{ scale: 0.98 }],
+  },
+  imageContainer: {
+    marginBottom: 8,
+    marginTop: 4,
+    height: 80,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
-  },
-  placeholderDark: {
-    backgroundColor: '#2c2c2c',
-  },
-  placeholderText: {
-    fontSize: 12,
-    color: '#adb5bd',
-    fontWeight: '600',
-  },
-  content: {
-    flex: 1,
-    justifyContent: 'center',
   },
   name: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: 'bold',
     color: '#212529',
-    marginBottom: 6,
-  },
-  algBox: {
-    backgroundColor: '#f8f9fa',
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    alignSelf: 'flex-start',
-  },
-  algBoxDark: {
-    backgroundColor: '#252525',
+    marginBottom: 4,
+    textAlign: 'center',
   },
   algorithm: {
     fontFamily: 'monospace',
-    fontSize: 14,
-    color: '#e74c3c',
-    fontWeight: '600',
-    letterSpacing: 0.5,
+    fontSize: 12,
+    color: '#6c757d',
+    textAlign: 'center',
+    lineHeight: 16,
+  },
+  algorithmDark: {
+    color: '#adb5bd',
   },
   starButton: {
-    padding: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  starButtonPressed: {
-    opacity: 0.5,
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    zIndex: 10,
   },
   starIcon: {
-    fontSize: 22,
+    fontSize: 18,
     color: '#f39c12',
   },
   textDark: {
@@ -124,5 +113,4 @@ const styles = StyleSheet.create({
   },
 });
 
-// React.memo to prevent unnecessary re-renders when other cards are highlighted
 export const CFOPCard = memo(CFOPCardComponent);

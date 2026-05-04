@@ -47,7 +47,7 @@ export const CfopSection = () => {
       </ScrollView>
 
       <View style={styles.listContainer}>
-        <CFOPList data={activeData} />
+        <CFOPList data={activeData} type={activePhase} />
       </View>
     </View>
   );
