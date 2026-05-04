@@ -138,7 +138,6 @@ export default function AchievementsScreen() {
   const isDark = colorScheme === 'dark';
   const { t } = useTranslation();
   const { streak, achievements } = useGamificationStore();
-  const supabaseUser = useAppStore(s => s.supabaseUser);
   const router = useRouter();
 
   const unlockedCount = useMemo(() => achievements.filter(a => a.unlockedAt).length, [achievements]);
@@ -157,21 +156,7 @@ export default function AchievementsScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        {!supabaseUser && (
-          <Pressable 
-            style={[styles.syncBanner, { backgroundColor: cardBg }]}
-            onPress={() => router.push('/(tabs)/profile')}
-          >
-            <View style={[styles.syncBannerIcon, { backgroundColor: '#ffd700' }]}>
-              <Ionicons name="cloud-upload" size={20} color="#fff" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.syncBannerTitle, { color: textPrimary }]}>Protege tus logros</Text>
-              <Text style={[styles.syncBannerSubtitle, { color: textSecondary }]}>Inicia sesión para sincronizar tus trofeos</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={isDark ? '#4dabf7' : '#228be6'} />
-          </Pressable>
-        )}
+
 
         {/* Streak & Stats Header */}
         <View style={[styles.statsCard, { backgroundColor: cardBg }]}>

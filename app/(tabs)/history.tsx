@@ -138,28 +138,11 @@ export default function HistoryScreen() {
     );
   }, [isDark, handleDelete]);
 
-  const supabaseUser = useAppStore(s => s.supabaseUser);
   const router = useRouter();
 
   return (
     <View style={[styles.container, isDark && styles.containerDark]}>
       <Header titleKey="tabs.history" />
-      
-      {!supabaseUser && (
-        <Pressable 
-          style={[styles.syncBanner, isDark && styles.syncBannerDark]}
-          onPress={() => router.push('/(tabs)/profile')}
-        >
-          <View style={styles.syncBannerIcon}>
-            <Ionicons name="cloud-upload" size={20} color="#fff" />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.syncBannerTitle}>Tus tiempos solo están en este dispositivo</Text>
-            <Text style={styles.syncBannerSubtitle}>Inicia sesión para guardarlos en la nube</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={18} color={isDark ? '#4dabf7' : '#007aff'} />
-        </Pressable>
-      )}
 
       <View style={[styles.statsContainer, isDark && styles.statsContainerDark]}>
         <View style={styles.statsHeader}>

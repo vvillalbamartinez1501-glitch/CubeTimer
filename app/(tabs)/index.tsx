@@ -48,7 +48,7 @@ export default function TimerScreen() {
 
   const { 
     currentScramble, generateNewScramble, activeUserId, activeCategoryId, 
-    activeSessionId, previousSessionId, setActiveSession, supabaseUser
+    activeSessionId, previousSessionId, setActiveSession
   } = useAppStore();
   const { updateStreak, checkAchievements } = useGamificationStore();
 
@@ -208,11 +208,9 @@ export default function TimerScreen() {
     ]}>
       <View style={styles.sidebarHeader}>
         <Text style={[styles.sidebarTitle, isDark && styles.textDark]}>Historial</Text>
-        {supabaseUser && (
-          <Pressable onPress={handleClearSession} style={styles.clearSessionBtn}>
-            <Ionicons name="trash" size={16} color="#ff3b30" />
-          </Pressable>
-        )}
+        <Pressable onPress={handleClearSession} style={styles.clearSessionBtn}>
+          <Ionicons name="trash" size={16} color="#ff3b30" />
+        </Pressable>
       </View>
       <View style={styles.solvesList}>
         {solves.slice(0, 15).map((solve, index) => (
@@ -230,17 +228,7 @@ export default function TimerScreen() {
           <Text style={styles.noSolvesText}>Sin tiempos</Text>
         )}
         
-        {!supabaseUser && (
-          <Pressable 
-            style={[styles.sidebarLoginPrompt, isDark && styles.sidebarLoginPromptDark]}
-            onPress={() => router.push('/(tabs)/profile')}
-          >
-            <Ionicons name="cloud-upload-outline" size={14} color={isDark ? '#4dabf7' : '#228be6'} />
-            <Text style={[styles.sidebarLoginPromptText, isDark && styles.textDark]}>
-              Sincronizar
-            </Text>
-          </Pressable>
-        )}
+
       </View>
     </View>
   );

@@ -167,7 +167,6 @@ export default function StatsScreen() {
     decimalPlaces: 0,
   };
 
-  const supabaseUser = useAppStore(s => s.supabaseUser);
   const router = useRouter();
 
   return (
@@ -178,21 +177,7 @@ export default function StatsScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        {!supabaseUser && (
-          <Pressable 
-            style={[styles.syncBanner, { backgroundColor: isDark ? '#1e1e2e' : '#fff' }]}
-            onPress={() => router.push('/(tabs)/profile')}
-          >
-            <View style={[styles.syncBannerIcon, { backgroundColor: '#37b24d' }]}>
-              <Ionicons name="cloud-upload" size={20} color="#fff" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.syncBannerTitle, { color: textPrimary }]}>Sincroniza tus estadísticas</Text>
-              <Text style={[styles.syncBannerSubtitle, { color: textSecondary }]}>Inicia sesión para verlas en cualquier lugar</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={isDark ? '#4dabf7' : '#228be6'} />
-          </Pressable>
-        )}
+
 
         {solves.length === 0 ? (
           <View style={styles.emptyContainer}>
