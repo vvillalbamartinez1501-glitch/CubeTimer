@@ -24,7 +24,11 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/favicon.png",
+      "lang": "es",
+      "shortName": "CubeTimer",
+      "themeColor": "#121212",
+      "description": "Cronómetro profesional para speedcubing. Entrena algoritmos, guarda tus estadísticas y mejora tus tiempos WCA."
     },
     "plugins": [
       "expo-router",

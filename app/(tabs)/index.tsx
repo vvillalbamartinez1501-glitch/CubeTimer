@@ -11,6 +11,7 @@ import {
   useColorScheme,
   View,
   Platform,
+  useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CategorySelector } from '../../src/components/CategorySelector';
@@ -40,6 +41,10 @@ export default function TimerScreen() {
   const isDark      = colorScheme === 'dark';
   const { t }       = useTranslation();
   const insets      = useSafeAreaInsets();
+  const { width }   = useWindowDimensions();
+  
+  const isMobile = width < 768;
+  const isTouch = Platform.OS !== 'web' || (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
 
   const { 
     currentScramble, generateNewScramble, activeUserId, activeCategoryId, 
@@ -188,14 +193,57 @@ export default function TimerScreen() {
   }, [isInspecting, hasPenalty, displayTime]);
 
   const instructionText = useMemo(() => {
-    if (timerState === 'idle') return t('timer.holdToStart');
+    if (timerState === 'idle') return isTouch ? '' : t('timer.holdToStart');
     if (timerState === 'inspecting') return t('timer.pressToReady');
-    if (timerState === 'holding') return t('timer.releaseToStart');
-    if (timerState === 'running') return t('timer.tapToStop');
+    if (timerState === 'holding') return isTouch ? '' : t('timer.releaseToStart');
+    if (timerState === 'running') return isTouch ? '' : t('timer.tapToStop');
     return '';
-  }, [timerState, t]);
+  }, [timerState, t, isTouch]);
 
-  const showUI = timerState === 'idle' || isInspecting || timerState === 'finished';
+  const renderSidebar = () => (
+    <View style={[
+      styles.sidebar, 
+      isDark && styles.sidebarDark,
+      isMobile && { width: '100%', borderRightWidth: 0, borderTopWidth: 1, borderTopColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }
+    ]}>
+      <View style={styles.sidebarHeader}>
+        <Text style={[styles.sidebarTitle, isDark && styles.textDark]}>Historial</Text>
+        {supabaseUser && (
+          <Pressable onPress={handleClearSession} style={styles.clearSessionBtn}>
+            <Ionicons name="trash" size={16} color="#ff3b30" />
+          </Pressable>
+        )}
+      </View>
+      <View style={styles.solvesList}>
+        {solves.slice(0, 15).map((solve, index) => (
+          <View key={solve.id} style={styles.solveItem}>
+            <Text style={styles.solveIndex}>{solves.length - index}</Text>
+            <Text style={[styles.solveTime, isDark && styles.textDark]}>
+              {formatTimeLocal(solve.time)}
+            </Text>
+            <Pressable onPress={() => handleDelete(solve.id)} style={styles.sidebarDeleteBtn}>
+              <Ionicons name="trash-outline" size={14} color="#ff3b30" />
+            </Pressable>
+          </View>
+        ))}
+        {solves.length === 0 && (
+          <Text style={styles.noSolvesText}>Sin tiempos</Text>
+        )}
+        
+        {!supabaseUser && (
+          <Pressable 
+            style={[styles.sidebarLoginPrompt, isDark && styles.sidebarLoginPromptDark]}
+            onPress={() => router.push('/(tabs)/profile')}
+          >
+            <Ionicons name="cloud-upload-outline" size={14} color={isDark ? '#4dabf7' : '#228be6'} />
+            <Text style={[styles.sidebarLoginPromptText, isDark && styles.textDark]}>
+              Sincronizar
+            </Text>
+          </Pressable>
+        )}
+      </View>
+    </View>
+  );
 
   return (
     <View style={[styles.container, isDark && styles.containerDark]}>
@@ -206,49 +254,10 @@ export default function TimerScreen() {
       )}
 
       {/* Main Content Area (Sidebar + Timer) */}
-      <View style={styles.mainContent}>
+      <View style={[styles.mainContent, isMobile && { flexDirection: 'column' }]}>
         
-        {/* SIDEBAR: History */}
-        {timerState === 'idle' && (
-          <View style={[styles.sidebar, isDark && styles.sidebarDark]}>
-            <View style={styles.sidebarHeader}>
-              <Text style={[styles.sidebarTitle, isDark && styles.textDark]}>Historial</Text>
-              {supabaseUser && (
-                <Pressable onPress={handleClearSession} style={styles.clearSessionBtn}>
-                  <Ionicons name="trash" size={16} color="#ff3b30" />
-                </Pressable>
-              )}
-            </View>
-            <View style={styles.solvesList}>
-              {solves.slice(0, 15).map((solve, index) => (
-                <View key={solve.id} style={styles.solveItem}>
-                  <Text style={styles.solveIndex}>{solves.length - index}</Text>
-                  <Text style={[styles.solveTime, isDark && styles.textDark]}>
-                    {formatTimeLocal(solve.time)}
-                  </Text>
-                  <Pressable onPress={() => handleDelete(solve.id)} style={styles.sidebarDeleteBtn}>
-                    <Ionicons name="trash-outline" size={14} color="#ff3b30" />
-                  </Pressable>
-                </View>
-              ))}
-              {solves.length === 0 && (
-                <Text style={styles.noSolvesText}>Sin tiempos</Text>
-              )}
-              
-              {!supabaseUser && (
-                <Pressable 
-                  style={[styles.sidebarLoginPrompt, isDark && styles.sidebarLoginPromptDark]}
-                  onPress={() => router.push('/(tabs)/profile')}
-                >
-                  <Ionicons name="cloud-upload-outline" size={14} color={isDark ? '#4dabf7' : '#228be6'} />
-                  <Text style={[styles.sidebarLoginPromptText, isDark && styles.textDark]}>
-                    Sincronizar
-                  </Text>
-                </Pressable>
-              )}
-            </View>
-          </View>
-        )}
+        {/* SIDEBAR: History (Desktop) */}
+        {!isMobile && timerState === 'idle' && renderSidebar()}
 
         <View style={styles.timerWrapper}>
           {/* 2. ÁREA DEL SCRAMBLE */}
@@ -275,7 +284,7 @@ export default function TimerScreen() {
             onPressIn={onPressDown}
             onPressOut={onPressUp}
           >
-            <Text style={[styles.timerText, { color: timerColor }]}>
+            <Text style={[styles.timerText, isMobile && { fontSize: 80 }, { color: timerColor }]}>
               {displayText}
             </Text>
           </Pressable>
@@ -339,13 +348,24 @@ export default function TimerScreen() {
                   </Pressable>
                 )}
 
-                <Text style={[styles.instructionText, isDark && styles.textLight]}>
-                  {instructionText}
-                </Text>
+                {instructionText ? (
+                  <Text style={[styles.instructionText, isDark && styles.textLight]}>
+                    {instructionText}
+                  </Text>
+                ) : null}
+                
+                {isTouch && timerState === 'idle' && (
+                  <Text style={[styles.touchWarning, isDark && styles.textLight]}>
+                    Nota: Realiza dos toques rápidos para detener el cronómetro
+                  </Text>
+                )}
               </View>
             )}
           </View>
         </View>
+
+        {/* SIDEBAR: History (Mobile) */}
+        {isMobile && timerState === 'idle' && renderSidebar()}
       </View>
     </View>
   );
@@ -477,6 +497,15 @@ const styles = StyleSheet.create({
     color: '#868e96',
     marginTop: 15,
     fontWeight: '500',
+    textAlign: 'center',
+  },
+  touchWarning: {
+    fontSize: 14,
+    color: '#868e96',
+    marginTop: 10,
+    fontStyle: 'italic',
+    textAlign: 'center',
+    paddingHorizontal: 20,
   },
   inspectionToggleContainer: {
     flexDirection: 'row',
