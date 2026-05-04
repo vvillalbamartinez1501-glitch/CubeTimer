@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View, Pressable, useColorScheme, Modal, TextInput, FlatList, Alert } from 'react-native';
+import { StyleSheet, Text, View, Pressable, useColorScheme, Modal, TextInput, FlatList, Alert, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
@@ -17,6 +17,8 @@ export const Header: React.FC<HeaderProps> = ({ titleKey }) => {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const router = useRouter(); // Added hook
+  const { width } = useWindowDimensions();
+  const isMobile = width < 768;
 
   const { 
     sessions, activeSessionId, activeCategoryId,
@@ -64,7 +66,7 @@ export const Header: React.FC<HeaderProps> = ({ titleKey }) => {
   };
 
   return (
-    <View style={[styles.header, { paddingTop: Math.max(insets.top, 10) }]}>
+    <View style={[styles.header, { paddingTop: Math.max(insets.top, 10) }, isMobile && { flexWrap: 'wrap', justifyContent: 'space-between' }]}>
       {/* Izquierda: Logo, App Name y Tab Name */}
       <View style={styles.headerLeft}>
         <View style={styles.logoTitleGroup}>
@@ -78,21 +80,23 @@ export const Header: React.FC<HeaderProps> = ({ titleKey }) => {
         </View>
       </View>
 
-      {/* Centro: Selectores */}
-      <View style={styles.headerCenter}>
-        <Pressable 
-          style={[styles.sessionPill, isDark && styles.sessionPillDark]}
-          onPress={() => setModalVisible(true)}
-        >
-          <Text style={[styles.sessionPillText, isDark && styles.textDark]}>
-            {displaySessionName}
-          </Text>
-          <Ionicons name="chevron-down" size={14} color={isDark ? '#aaa' : '#666'} />
-        </Pressable>
-        <View style={{ zIndex: 100 }}>
-          <CategorySelector />
+      {/* Centro: Selectores (Desktop) */}
+      {!isMobile && (
+        <View style={styles.headerCenter}>
+          <Pressable 
+            style={[styles.sessionPill, isDark && styles.sessionPillDark]}
+            onPress={() => setModalVisible(true)}
+          >
+            <Text style={[styles.sessionPillText, isDark && styles.textDark]}>
+              {displaySessionName}
+            </Text>
+            <Ionicons name="chevron-down" size={14} color={isDark ? '#aaa' : '#666'} />
+          </Pressable>
+          <View style={{ zIndex: 100 }}>
+            <CategorySelector />
+          </View>
         </View>
-      </View>
+      )}
 
       {/* Derecha: Iconos */}
       <View style={styles.headerRight}>
@@ -103,6 +107,24 @@ export const Header: React.FC<HeaderProps> = ({ titleKey }) => {
           <Ionicons name="person-outline" size={24} color={isDark ? '#fff' : '#000'} />
         </Pressable>
       </View>
+
+      {/* Centro: Selectores (Mobile) */}
+      {isMobile && (
+        <View style={[styles.headerCenter, { width: '100%', justifyContent: 'center', marginTop: 15 }]}>
+          <Pressable 
+            style={[styles.sessionPill, isDark && styles.sessionPillDark]}
+            onPress={() => setModalVisible(true)}
+          >
+            <Text style={[styles.sessionPillText, isDark && styles.textDark]}>
+              {displaySessionName}
+            </Text>
+            <Ionicons name="chevron-down" size={14} color={isDark ? '#aaa' : '#666'} />
+          </Pressable>
+          <View style={{ zIndex: 100 }}>
+            <CategorySelector />
+          </View>
+        </View>
+      )}
 
       {/* Modal de Sesiones */}
       <Modal
