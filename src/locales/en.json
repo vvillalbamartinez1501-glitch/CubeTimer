@@ -5,7 +5,20 @@
     "stats": "Stats",
     "train": "Train",
     "learn": "Learn",
-    "profile": "Profile"
+    "profile": "Profile",
+    "achievements": "Achievements"
+  },
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "appearance": "Appearance",
+    "darkMode": "Dark Mode",
+    "lightMode": "Light Mode",
+    "systemDefault": "System Default",
+    "timer": "Timer",
+    "inspectionSound": "Inspection Sound",
+    "vibration": "Vibration",
+    "about": "About"
   },
   "timer": {
     "holdToStart": "Hold screen or space to start",
@@ -21,14 +34,18 @@
     "delete": "Delete",
     "plus2": "+2s",
     "confirm": "Confirm",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "success": "Success"
   },
   "history": {
     "title": "Solve History",
     "bestTime": "Best Time",
     "ao5": "Ao5",
     "empty": "No solves recorded for this category.",
-    "webNotAvailable": "Local storage is not available in the web version yet."
+    "webNotAvailable": "Local storage is not available in the web version yet.",
+    "deleteConfirmTitle": "Delete Record?",
+    "deleteConfirmMsg": "Are you sure you want to delete this solve? This action cannot be undone.",
+    "deletedSuccess": "Record deleted successfully"
   },
   "learn": {
     "basic": "Basic",

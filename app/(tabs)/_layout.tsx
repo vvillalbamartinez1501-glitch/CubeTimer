@@ -14,7 +14,7 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: colorScheme === 'dark' ? '#4dabf7' : '#007aff',
-        headerShown: true,
+        headerShown: false,
       }}>
       <Tabs.Screen
         name="index"
@@ -49,6 +49,13 @@ export default function TabLayout() {
         options={{
           title: t('tabs.learn'),
           tabBarIcon: ({ color }) => <Ionicons name="book-outline" size={24} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="achievements"
+        options={{
+          title: t('tabs.achievements') || 'Logros',
+          tabBarIcon: ({ color }) => <Ionicons name="trophy-outline" size={24} color={color} />,
         }}
       />
       <Tabs.Screen

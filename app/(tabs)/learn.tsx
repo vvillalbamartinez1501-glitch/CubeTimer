@@ -6,6 +6,8 @@ import { CfopSection } from '../../src/components/learning/CfopSection';
 import { MethodsGuide } from '../../src/components/learning/MethodsGuide';
 import { AdvancedTips } from '../../src/components/learning/AdvancedTips';
 
+import { Header } from '../../src/components/Header';
+
 type Section = 'basic' | 'cfop' | 'methods' | 'advanced';
 
 const SECTIONS: { key: Section; i18nKey: string; emoji: string }[] = [
@@ -32,6 +34,7 @@ export default function LearnScreen() {
 
   return (
     <View style={[styles.container, isDark && styles.containerDark]}>
+      <Header titleKey="tabs.learn" />
       <ScrollView 
         horizontal 
         showsHorizontalScrollIndicator={false} 

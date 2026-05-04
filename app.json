@@ -9,9 +9,12 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.vvm.cubetimer"
     },
     "android": {
+      "package": "com.vvm.cubetimer",
+      "versionCode": 1,
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -24,7 +27,11 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/favicon.png",
+      "lang": "es",
+      "shortName": "CubeTimer",
+      "themeColor": "#121212",
+      "description": "Cronómetro profesional para speedcubing. Entrena algoritmos, guarda tus estadísticas y mejora tus tiempos WCA."
     },
     "plugins": [
       "expo-router",

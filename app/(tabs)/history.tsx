@@ -1,12 +1,13 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { StyleSheet, Text, View, FlatList, Pressable, useColorScheme, Platform } from 'react-native';
-import { useFocusEffect } from 'expo-router';
+import { StyleSheet, Text, View, FlatList, Pressable, useColorScheme, Platform, Alert } from 'react-native';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useAppStore } from '../../src/store/useAppStore';
-import { getSolves, deleteSolve } from '../../src/database/operations';
+import { getSolves, deleteSolve, clearSessionSolves } from '../../src/database/operations';
 import { formatTime } from '../../src/utils/timeFormat';
 import { CategorySelector } from '../../src/components/CategorySelector';
+import { Header } from '../../src/components/Header';
 
 interface SolveRecord {
   id: number;
@@ -20,11 +21,11 @@ export default function HistoryScreen() {
   const isDark = colorScheme === 'dark';
   const { t } = useTranslation();
   
-  const { activeUserId, activeCategoryId } = useAppStore();
+  const { activeUserId, activeCategoryId, activeSessionId } = useAppStore();
   const [solves, setSolves] = useState<SolveRecord[]>([]);
 
   const fetchSolves = async () => {
-    const data = await getSolves(activeUserId, activeCategoryId);
+    const data = await getSolves(activeUserId, activeCategoryId, activeSessionId);
     if (data) {
       setSolves(data as SolveRecord[]);
     }
@@ -35,13 +36,68 @@ export default function HistoryScreen() {
   useFocusEffect(
     useCallback(() => {
       fetchSolves();
-    }, [activeUserId, activeCategoryId])
+    }, [activeUserId, activeCategoryId, activeSessionId])
   );
 
   const handleDelete = useCallback(async (id: number) => {
-    await deleteSolve(id);
-    setSolves(prev => prev.filter(s => s.id !== id));
-  }, []);
+    const title = t('history.deleteConfirmTitle') || '¿Eliminar registro?';
+    const msg = t('history.deleteConfirmMsg') || 'Esta acción no se puede deshacer.';
+
+    const performDelete = async () => {
+      try {
+        await deleteSolve(id);
+        setSolves(prev => prev.filter(s => s.id !== id));
+        if (Platform.OS !== 'web') {
+          Alert.alert(t('actions.success') || 'Éxito', t('history.deletedSuccess') || 'Eliminado correctamente');
+        }
+      } catch (e) {
+        if (Platform.OS !== 'web') Alert.alert('Error', 'No se pudo eliminar el registro');
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      if (window.confirm(`${title}\n\n${msg}`)) {
+        performDelete();
+      }
+      return;
+    }
+
+    Alert.alert(title, msg, [
+      { text: t('actions.cancel') || 'Cancelar', style: 'cancel' },
+      { text: t('actions.delete') || 'Eliminar', style: 'destructive', onPress: performDelete },
+    ]);
+  }, [t]);
+
+  const handleClearSession = useCallback(() => {
+    if (solves.length === 0) return;
+
+    const title = t('history.clearSessionTitle') || '¿Vaciar sesión?';
+    const msg = t('history.clearSessionMsg') || '¿Estás seguro de que quieres eliminar TODOS los tiempos de esta sesión? Esta acción no se puede deshacer.';
+
+    const performClear = async () => {
+      try {
+        await clearSessionSolves(activeUserId, activeCategoryId, activeSessionId);
+        setSolves([]);
+        if (Platform.OS !== 'web') {
+          Alert.alert(t('actions.success') || 'Éxito', t('history.sessionCleared') || 'Sesión vaciada correctamente');
+        }
+      } catch (e) {
+        if (Platform.OS !== 'web') Alert.alert('Error', 'No se pudo vaciar la sesión');
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      if (window.confirm(`${title}\n\n${msg}`)) {
+        performClear();
+      }
+      return;
+    }
+
+    Alert.alert(title, msg, [
+      { text: t('actions.cancel') || 'Cancelar', style: 'cancel' },
+      { text: t('actions.delete') || 'Eliminar', style: 'destructive', onPress: performClear },
+    ]);
+  }, [t, solves, activeUserId, activeCategoryId, activeSessionId]);
 
   // ── useMemo: solo se recalcula cuando cambia la lista de solves ───────────
   const bestTime = useMemo(() => {
@@ -82,40 +138,59 @@ export default function HistoryScreen() {
     );
   }, [isDark, handleDelete]);
 
+  const supabaseUser = useAppStore(s => s.supabaseUser);
+  const router = useRouter();
+
   return (
     <View style={[styles.container, isDark && styles.containerDark]}>
-      <View style={styles.header}>
-        <CategorySelector />
-      </View>
+      <Header titleKey="tabs.history" />
       
+      {!supabaseUser && (
+        <Pressable 
+          style={[styles.syncBanner, isDark && styles.syncBannerDark]}
+          onPress={() => router.push('/(tabs)/profile')}
+        >
+          <View style={styles.syncBannerIcon}>
+            <Ionicons name="cloud-upload" size={20} color="#fff" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.syncBannerTitle}>Tus tiempos solo están en este dispositivo</Text>
+            <Text style={styles.syncBannerSubtitle}>Inicia sesión para guardarlos en la nube</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={isDark ? '#4dabf7' : '#007aff'} />
+        </Pressable>
+      )}
+
       <View style={[styles.statsContainer, isDark && styles.statsContainerDark]}>
-        <View style={styles.statBox}>
-          <Text style={styles.statLabel}>{t('history.bestTime')}</Text>
-          <Text style={[styles.statValue, isDark && styles.textDark]}>{bestTime}</Text>
+        <View style={styles.statsHeader}>
+          <Text style={styles.statsTitle}>Stats de Sesión</Text>
+          <Pressable onPress={handleClearSession} style={styles.clearButton}>
+            <Ionicons name="trash-bin-outline" size={20} color="#ff3b30" />
+          </Pressable>
         </View>
-        <View style={styles.statBox}>
-          <Text style={styles.statLabel}>{t('history.ao5')}</Text>
-          <Text style={[styles.statValue, isDark && styles.textDark]}>{ao5}</Text>
+        <View style={styles.statsRow}>
+          <View style={styles.statBox}>
+            <Text style={styles.statLabel}>{t('history.bestTime')}</Text>
+            <Text style={[styles.statValue, isDark && styles.textDark]}>{bestTime}</Text>
+          </View>
+          <View style={styles.statBox}>
+            <Text style={styles.statLabel}>{t('history.ao5')}</Text>
+            <Text style={[styles.statValue, isDark && styles.textDark]}>{ao5}</Text>
+          </View>
         </View>
       </View>
 
-      {Platform.OS === 'web' ? (
-        <Text style={[styles.emptyText, isDark && styles.textLight]}>
-          {t('history.webNotAvailable')}
-        </Text>
-      ) : (
-        <FlatList
-          data={solves}
-          keyExtractor={item => item.id.toString()}
-          renderItem={renderItem}
-          contentContainerStyle={styles.listContent}
-          ListEmptyComponent={
-            <Text style={[styles.emptyText, isDark && styles.textLight]}>
-              {t('history.empty')}
-            </Text>
-          }
-        />
-      )}
+      <FlatList
+        data={solves}
+        keyExtractor={item => item.id.toString()}
+        renderItem={renderItem}
+        contentContainerStyle={styles.listContent}
+        ListEmptyComponent={
+          <Text style={[styles.emptyText, isDark && styles.textLight]}>
+            {t('history.empty')}
+          </Text>
+        }
+      />
     </View>
   );
 }
@@ -133,8 +208,6 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   statsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
     padding: 20,
     backgroundColor: '#fff',
     borderBottomWidth: 1,
@@ -144,6 +217,25 @@ const styles = StyleSheet.create({
   statsContainerDark: {
     backgroundColor: '#1e1e1e',
     borderBottomColor: '#333',
+  },
+  statsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  statsTitle: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#8e8e93',
+    textTransform: 'uppercase',
+  },
+  clearButton: {
+    padding: 4,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
   },
   statBox: {
     alignItems: 'center',
@@ -207,5 +299,44 @@ const styles = StyleSheet.create({
     color: '#868e96',
     fontSize: 16,
     paddingHorizontal: 20,
+  },
+  syncBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    margin: 16,
+    padding: 16,
+    borderRadius: 20,
+    gap: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.02)',
+  },
+  syncBannerDark: {
+    backgroundColor: '#1e1e2e',
+    borderColor: 'rgba(255,255,255,0.05)',
+  },
+  syncBannerIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: '#007aff',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  syncBannerTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#212529',
+    marginBottom: 2,
+  },
+  syncBannerSubtitle: {
+    fontSize: 12,
+    color: '#868e96',
+    fontWeight: '500',
   },
 });

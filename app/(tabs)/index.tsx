@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useRouter } from 'expo-router';
 import {
   Alert,
   Pressable,
@@ -9,11 +10,16 @@ import {
   Text,
   useColorScheme,
   View,
+  Platform,
+  useWindowDimensions,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CategorySelector } from '../../src/components/CategorySelector';
-import { getCategorySolveCount, getTotalSolves, saveSolve } from '../../src/database/operations';
+import { getCategorySolveCount, getSolves, getTotalSolves, saveSolve, deleteSolve, clearSessionSolves } from '../../src/database/operations';
 import { useSpeedTimer } from '../../src/hooks/useSpeedTimer';
 import { useGamificationStore } from '../../src/store/gamificationStore';
+import { Header } from '../../src/components/Header';
+
 import { useAppStore } from '../../src/store/useAppStore';
 
 // ─── Formateador Local (Garantiza . para centésimas) ─────────────────────────
@@ -34,11 +40,34 @@ export default function TimerScreen() {
   const colorScheme = useColorScheme();
   const isDark      = colorScheme === 'dark';
   const { t }       = useTranslation();
+  const insets      = useSafeAreaInsets();
+  const { width }   = useWindowDimensions();
+  
+  const isMobile = width < 768;
+  const isTouch = Platform.OS !== 'web' || (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
 
-  const { currentScramble, generateNewScramble, activeUserId, activeCategoryId } = useAppStore();
+  const { 
+    currentScramble, generateNewScramble, activeUserId, activeCategoryId, 
+    activeSessionId, previousSessionId, setActiveSession, supabaseUser
+  } = useAppStore();
   const { updateStreak, checkAchievements } = useGamificationStore();
 
   const [isInspectionEnabled, setIsInspectionEnabled] = useState(false);
+  const [solves, setSolves] = useState<any[]>([]);
+
+  // ─── Fetch Solves ───────────────────────────────────────────────────────────
+  const fetchHistory = useCallback(async () => {
+    try {
+      const data = await getSolves(activeUserId, activeCategoryId, activeSessionId);
+      setSolves(data);
+    } catch (e) {
+      console.warn('[Timer] Fetch history error:', e);
+    }
+  }, [activeUserId, activeCategoryId, activeSessionId]);
+
+  React.useEffect(() => {
+    fetchHistory();
+  }, [fetchHistory, activeSessionId]);
 
   // ─── Custom Hook para el Cronómetro (Lógica centralizada) ──────────────────
   const {
@@ -54,8 +83,12 @@ export default function TimerScreen() {
     isInspectionEnabled,
   });
 
-  console.log('[TimerScreen] State:', timerState, 'DisplayTime:', displayTime);
-
+  // ─── Auto-revert 'All Sessions' to previous session when starting a solve ──
+  React.useEffect(() => {
+    if ((timerState === 'holding' || timerState === 'running' || isInspecting) && activeSessionId === 'ALL_SESSIONS') {
+      setActiveSession(previousSessionId || `default-${activeCategoryId}`);
+    }
+  }, [timerState, isInspecting, activeSessionId, previousSessionId, activeCategoryId, setActiveSession]);
 
   // ─── Acciones Post-Solve ────────────────────────────────────────────────────
   const handleDiscard = useCallback(() => {
@@ -67,13 +100,13 @@ export default function TimerScreen() {
     const timeToSave = displayTime;
     const scrambleToSave = currentScramble;
     
-    // Reset UI inmediatamente (Interfaz Optimista)
     handleDiscard();
 
     const persist = async () => {
       try {
-        await saveSolve(activeUserId, activeCategoryId, timeToSave, scrambleToSave);
+        await saveSolve(activeUserId, activeCategoryId, timeToSave, scrambleToSave, activeSessionId);
         updateStreak();
+        fetchHistory();
         const [total, catTotal] = await Promise.all([
           getTotalSolves(activeUserId),
           getCategorySolveCount(activeUserId, activeCategoryId),
@@ -85,7 +118,67 @@ export default function TimerScreen() {
       }
     };
     persist();
-  }, [displayTime, currentScramble, activeUserId, activeCategoryId, handleDiscard, updateStreak, checkAchievements]);
+  }, [displayTime, currentScramble, activeUserId, activeCategoryId, activeSessionId, handleDiscard, updateStreak, checkAchievements, fetchHistory]);
+
+  const handleDelete = useCallback(async (id: number) => {
+    const title = t('history.deleteConfirmTitle') || '¿Eliminar registro?';
+    const msg = t('history.deleteConfirmMsg') || 'Esta acción no se puede deshacer.';
+    
+    const performDelete = async () => {
+      try {
+        await deleteSolve(id);
+        fetchHistory();
+        if (Platform.OS !== 'web') {
+          Alert.alert(t('actions.success') || 'Éxito', t('history.deletedSuccess') || 'Eliminado correctamente');
+        }
+      } catch (e) {
+        if (Platform.OS !== 'web') Alert.alert('Error', 'No se pudo eliminar');
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      if (window.confirm(`${title}\n\n${msg}`)) {
+        performDelete();
+      }
+      return;
+    }
+
+    Alert.alert(title, msg, [
+      { text: t('actions.cancel') || 'Cancelar', style: 'cancel' },
+      { text: t('actions.delete') || 'Eliminar', style: 'destructive', onPress: performDelete },
+    ]);
+  }, [t, fetchHistory]);
+
+  const handleClearSession = useCallback(() => {
+    if (solves.length === 0) return;
+    
+    const title = t('history.clearSessionTitle') || '¿Vaciar sesión?';
+    const msg = t('history.clearSessionMsg') || '¿Estás seguro de que quieres eliminar TODOS los tiempos de esta sesión? Esta acción no se puede deshacer.';
+
+    const performClear = async () => {
+      try {
+        await clearSessionSolves(activeUserId, activeCategoryId, activeSessionId);
+        fetchHistory();
+        if (Platform.OS !== 'web') {
+          Alert.alert(t('actions.success') || 'Éxito', t('history.sessionCleared') || 'Sesión vaciada correctamente');
+        }
+      } catch (e) {
+        if (Platform.OS !== 'web') Alert.alert('Error', 'No se pudo vaciar la sesión');
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      if (window.confirm(`${title}\n\n${msg}`)) {
+        performClear();
+      }
+      return;
+    }
+
+    Alert.alert(title, msg, [
+      { text: t('actions.cancel') || 'Cancelar', style: 'cancel' },
+      { text: t('actions.delete') || 'Eliminar', style: 'destructive', onPress: performClear },
+    ]);
+  }, [t, solves, activeUserId, activeCategoryId, activeSessionId, fetchHistory]);
 
   // ─── Visuales ───────────────────────────────────────────────────────────────
   const timerColor = useMemo(() => {
@@ -100,178 +193,335 @@ export default function TimerScreen() {
   }, [isInspecting, hasPenalty, displayTime]);
 
   const instructionText = useMemo(() => {
-    if (timerState === 'idle') return t('timer.holdToStart');
+    if (timerState === 'idle') return isTouch ? '' : t('timer.holdToStart');
     if (timerState === 'inspecting') return t('timer.pressToReady');
-    if (timerState === 'holding') return t('timer.releaseToStart');
-    if (timerState === 'running') return t('timer.tapToStop');
+    if (timerState === 'holding') return isTouch ? '' : t('timer.releaseToStart');
+    if (timerState === 'running') return isTouch ? '' : t('timer.tapToStop');
     return '';
-  }, [timerState, t]);
+  }, [timerState, t, isTouch]);
+
+  const renderSidebar = () => (
+    <View style={[
+      styles.sidebar, 
+      isDark && styles.sidebarDark,
+      isMobile && { width: '100%', borderRightWidth: 0, borderTopWidth: 1, borderTopColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }
+    ]}>
+      <View style={styles.sidebarHeader}>
+        <Text style={[styles.sidebarTitle, isDark && styles.textDark]}>Historial</Text>
+        {supabaseUser && (
+          <Pressable onPress={handleClearSession} style={styles.clearSessionBtn}>
+            <Ionicons name="trash" size={16} color="#ff3b30" />
+          </Pressable>
+        )}
+      </View>
+      <View style={styles.solvesList}>
+        {solves.slice(0, 15).map((solve, index) => (
+          <View key={solve.id} style={styles.solveItem}>
+            <Text style={styles.solveIndex}>{solves.length - index}</Text>
+            <Text style={[styles.solveTime, isDark && styles.textDark]}>
+              {formatTimeLocal(solve.time)}
+            </Text>
+            <Pressable onPress={() => handleDelete(solve.id)} style={styles.sidebarDeleteBtn}>
+              <Ionicons name="trash-outline" size={14} color="#ff3b30" />
+            </Pressable>
+          </View>
+        ))}
+        {solves.length === 0 && (
+          <Text style={styles.noSolvesText}>Sin tiempos</Text>
+        )}
+        
+        {!supabaseUser && (
+          <Pressable 
+            style={[styles.sidebarLoginPrompt, isDark && styles.sidebarLoginPromptDark]}
+            onPress={() => router.push('/(tabs)/profile')}
+          >
+            <Ionicons name="cloud-upload-outline" size={14} color={isDark ? '#4dabf7' : '#228be6'} />
+            <Text style={[styles.sidebarLoginPromptText, isDark && styles.textDark]}>
+              Sincronizar
+            </Text>
+          </Pressable>
+        )}
+      </View>
+    </View>
+  );
+
+  const showUI = timerState === 'idle' || isInspecting || timerState === 'finished';
 
   return (
     <View style={[styles.container, isDark && styles.containerDark]}>
       
-      {/* 1. SECCIÓN SUPERIOR: Category Selector y Scramble */}
-      <View style={styles.topSection}>
-        {timerState === 'idle' && (
-          <View style={styles.selectorWrapper}>
-            <CategorySelector />
-          </View>
-        )}
-        {(timerState === 'idle' || isInspecting || timerState === 'finished') && (
-          <View style={styles.scrambleContainer}>
-            <Text style={[styles.scrambleText, isDark && styles.textDark]}>
-              {currentScramble}
+      {/* 1. HEADER (Top Bar) */}
+      {timerState === 'idle' && (
+        <Header titleKey="tabs.timer" />
+      )}
+
+      {/* Main Content Area (Sidebar + Timer) */}
+      <View style={[styles.mainContent, isMobile && { flexDirection: 'column' }]}>
+        
+        {/* SIDEBAR: History (Desktop) */}
+        {!isMobile && timerState === 'idle' && renderSidebar()}
+
+        <View style={styles.timerWrapper}>
+          {/* 2. ÁREA DEL SCRAMBLE */}
+          {showUI && (
+            <View style={styles.scrambleArea}>
+              <Text style={[styles.scrambleText, isDark && styles.textDark]}>
+                {currentScramble}
+              </Text>
+              <Pressable 
+                onPress={() => generateNewScramble()} 
+                style={({ pressed }) => [
+                  styles.refreshButton,
+                  pressed && { opacity: 0.6, transform: [{ scale: 0.9 }] }
+                ]}
+              >
+                <Ionicons name="refresh-outline" size={24} color={isDark ? "#adb5bd" : "#868e96"} />
+              </Pressable>
+            </View>
+          )}
+
+          {/* 3. ÁREA DEL CRONÓMETRO */}
+          <Pressable
+            style={styles.timerArea}
+            onPressIn={onPressDown}
+            onPressOut={onPressUp}
+          >
+            <Text style={[styles.timerText, isMobile && { fontSize: 80 }, { color: timerColor }]}>
+              {displayText}
             </Text>
-          </View>
-        )}
-      </View>
+          </Pressable>
 
-      {/* 2. ÁREA DEL CRONÓMETRO: Pressable gigante (Middle) */}
-      <Pressable
-        style={styles.timerContainer}
-        onPressIn={onPressDown}
-        onPressOut={onPressUp}
-      >
-        <Text style={[styles.timerText, { color: timerColor }]}>
-          {displayText}
-        </Text>
-      </Pressable>
+          {/* 4. FOOTER */}
+          <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 20) }]}>
+            {timerState === 'finished' ? (
+              <View style={styles.actionRow}>
+                <Pressable onPress={handleDiscard} style={[styles.actionButton, styles.buttonDelete]}>
+                  <Ionicons name="trash" size={32} color="#fff" />
+                </Pressable>
+                <Pressable onPress={addPenalty} style={[styles.actionButton, styles.buttonPenalty]}>
+                  <Text style={styles.penaltyText}>+2s</Text>
+                </Pressable>
+                <Pressable onPress={handleSave} style={[styles.actionButton, styles.buttonSave]}>
+                  <Ionicons name="checkmark" size={36} color="#fff" />
+                </Pressable>
+              </View>
+            ) : (
+              <View style={styles.instructionContainer}>
+                {timerState === 'idle' && (
+                  <View style={styles.inspectionToggleContainer}>
+                    <Text style={[styles.inspectionText, isDark && styles.textDark]}>{t('timer.inspectionWCA')}</Text>
+                    <Switch 
+                      value={isInspectionEnabled} 
+                      onValueChange={setIsInspectionEnabled}
+                      trackColor={{ false: '#767577', true: '#00C851' }}
+                      thumbColor={isInspectionEnabled ? '#fff' : '#f4f3f4'}
+                    />
+                  </View>
+                )}
 
-      {/* 3. SECCIÓN INFERIOR: Botones de acción y controles (Bottom) */}
-      <View style={styles.bottomSection}>
-        {timerState === 'finished' ? (
-          <View style={styles.actionRow}>
-            <Pressable onPress={handleDiscard} style={[styles.actionButton, styles.buttonDelete]}>
-              <Ionicons name="trash" size={32} color="#fff" />
-            </Pressable>
-            <Pressable onPress={addPenalty} style={[styles.actionButton, styles.buttonPenalty]}>
-              <Text style={styles.penaltyText}>+2s</Text>
-            </Pressable>
-            <Pressable onPress={handleSave} style={[styles.actionButton, styles.buttonSave]}>
-              <Ionicons name="checkmark" size={36} color="#fff" />
-            </Pressable>
-          </View>
-        ) : (
-          <View style={styles.instructionContainer}>
-            {timerState === 'idle' && (
-              <View style={styles.inspectionToggleContainer}>
-                <Text style={[styles.inspectionText, isDark && styles.textDark]}>{t('timer.inspectionWCA')}</Text>
-                <Switch 
-                  value={isInspectionEnabled} 
-                  onValueChange={setIsInspectionEnabled} 
-                />
+                {timerState !== 'running' && timerState !== 'holding' && (
+                  <Pressable
+                    onPress={() => {
+                      if (timerState === 'idle' || timerState === 'finished' || timerState === 'inspecting') {
+                        onPressDown();
+                        if (!isInspectionEnabled) {
+                          setTimeout(onPressUp, 10);
+                        }
+                      } else if (timerState === 'holding') {
+                        onPressUp();
+                      } else if (timerState === 'running') {
+                        onPressDown();
+                      }
+                    }}
+                    style={({ pressed }) => [
+                      styles.timerActionButton,
+                      {
+                        backgroundColor: timerState === 'running' ? '#ff4444' : '#00C851',
+                        transform: [{ scale: pressed ? 0.92 : 1 }],
+                        shadowColor: timerState === 'running' ? '#ff4444' : '#00C851',
+                      }
+                    ]}
+                  >
+                    <Ionicons 
+                      name={timerState === 'running' ? "stop" : "play"} 
+                      size={36} 
+                      color="#fff" 
+                    />
+                  </Pressable>
+                )}
+
+                {instructionText ? (
+                  <Text style={[styles.instructionText, isDark && styles.textLight]}>
+                    {instructionText}
+                  </Text>
+                ) : null}
+                
+                {isTouch && timerState === 'idle' && (
+                  <Text style={[styles.touchWarning, isDark && styles.textLight]}>
+                    Nota: Realiza dos toques rápidos para detener el cronómetro
+                  </Text>
+                )}
               </View>
             )}
-
-            {/* Botón principal: Simplificado a Toggle para máxima compatibilidad */}
-            <Pressable
-              onPress={() => {
-                console.log('[TimerScreen] Button onPress, current state:', timerState);
-                if (timerState === 'idle' || timerState === 'finished' || timerState === 'inspecting') {
-                  onPressDown();
-                  // Forzamos el inicio si no es inspección
-                  if (!isInspectionEnabled) {
-                    setTimeout(onPressUp, 10);
-                  }
-                } else if (timerState === 'holding') {
-                  onPressUp();
-                } else if (timerState === 'running') {
-                  onPressDown();
-                }
-              }}
-              style={({ pressed }) => [
-                styles.timerActionButton,
-                {
-                  backgroundColor: timerState === 'running' ? '#ff4444' : '#00C851',
-                  transform: [{ scale: pressed ? 0.92 : 1 }],
-                  shadowColor: timerState === 'running' ? '#ff4444' : '#00C851',
-                }
-              ]}
-            >
-              <Ionicons 
-                name={timerState === 'running' ? "stop" : "play"} 
-                size={42} 
-                color="#fff" 
-              />
-              <Text style={styles.timerActionButtonText}>
-                {timerState === 'running' ? t('timer.stop') : t('timer.start')}
-              </Text>
-            </Pressable>
-
-
-
-            <Text style={[styles.instructionText, isDark && styles.textLight]}>
-              {instructionText}
-            </Text>
           </View>
-        )}
+        </View>
+
+        {/* SIDEBAR: History (Mobile) */}
+        {isMobile && timerState === 'idle' && renderSidebar()}
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  container: { flex: 1, backgroundColor: '#f8f9fa' },
+  containerDark: { backgroundColor: '#121212' },
+
+  // Main Content
+  mainContent: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    flexDirection: 'row',
   },
-  containerDark: {
-    backgroundColor: '#121212',
+  sidebar: {
+    width: 180,
+    backgroundColor: 'rgba(0,0,0,0.02)',
+    borderRightWidth: 1,
+    borderRightColor: 'rgba(0,0,0,0.05)',
+    paddingTop: 10,
+    paddingHorizontal: 15,
   },
-  topSection: {
-    paddingTop: 40,
-    minHeight: 120,
-    justifyContent: 'flex-start',
-    zIndex: 10,
+  sidebarDark: {
+    backgroundColor: 'rgba(255,255,255,0.02)',
+    borderRightColor: 'rgba(255,255,255,0.05)',
   },
-  selectorWrapper: {
-    zIndex: 100,
-    minHeight: 50,
+  sidebarTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#868e96',
+    textTransform: 'uppercase',
+    textAlign: 'center',
   },
-  scrambleContainer: {
-    paddingHorizontal: 20,
+  sidebarHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+    paddingHorizontal: 5,
+  },
+  clearSessionBtn: {
+    padding: 4,
+  },
+  solvesList: {
+    flex: 1,
+  },
+  solveItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 6,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(0,0,0,0.05)',
+  },
+  solveIndex: {
+    fontSize: 12,
+    color: '#adb5bd',
+    fontWeight: '600',
+  },
+  solveTime: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#495057',
+  },
+  sidebarDeleteBtn: {
+    padding: 4,
+  },
+  noSolvesText: {
+    fontSize: 12,
+    color: '#adb5bd',
+    textAlign: 'center',
+    marginTop: 20,
+    fontStyle: 'italic',
+  },
+  timerWrapper: {
+    flex: 1,
+  },
+  
+  // Scramble Area
+  scrambleArea: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 10,
+    paddingHorizontal: 40,
+    paddingTop: 15,
+    zIndex: 10,
+    gap: 10,
   },
   scrambleText: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontSize: 20,
+    fontWeight: '700',
     textAlign: 'center',
     color: '#343a40',
+    lineHeight: 28,
+    flexShrink: 1,
   },
-  timerContainer: {
+  refreshButton: {
+    padding: 8,
+    borderRadius: 20,
+  },
+
+  // Timer Area
+  timerArea: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     width: '100%',
   },
   timerText: {
-    fontSize: 90,
+    fontSize: 100,
     fontWeight: '300',
     fontVariant: ['tabular-nums'],
+    letterSpacing: -2,
   },
-  bottomSection: {
-    minHeight: 180,
+
+  // Footer
+  footer: {
+    minHeight: 120,
     justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
   },
   instructionContainer: {
-    paddingBottom: 40,
     alignItems: 'center',
+    width: '100%',
   },
   instructionText: {
     fontSize: 18,
     color: '#868e96',
+    marginTop: 15,
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+  touchWarning: {
+    fontSize: 14,
+    color: '#868e96',
     marginTop: 10,
+    fontStyle: 'italic',
+    textAlign: 'center',
+    paddingHorizontal: 20,
   },
   inspectionToggleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    backgroundColor: 'rgba(0,0,0,0.05)',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    gap: 12,
     marginBottom: 10,
   },
   inspectionText: {
     fontSize: 16,
+    fontWeight: '600',
     color: '#212529',
   },
   textDark: { color: '#f8f9fa' },
@@ -279,41 +529,54 @@ const styles = StyleSheet.create({
   actionRow: {
     flexDirection: 'row',
     justifyContent: 'center',
-    paddingBottom: 40,
-    gap: 30,
+    alignItems: 'center',
+    gap: 40,
   },
   actionButton: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 68,
+    height: 68,
+    borderRadius: 34,
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 4,
+    elevation: 6,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
   },
   buttonDelete: { backgroundColor: '#ff4444' },
   buttonPenalty: { backgroundColor: '#f39c12' },
-  buttonSave: { backgroundColor: '#00C851' },
-  penaltyText: { color: '#fff', fontSize: 20, fontWeight: 'bold' },
+  buttonSave: { backgroundColor: '#00C851', width: 80, height: 80, borderRadius: 40 },
+  penaltyText: { color: '#fff', fontSize: 22, fontWeight: '800' },
+  
+  // Timer Action Button
   timerActionButton: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 8,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 6,
-    marginVertical: 20,
+    marginVertical: 10,
   },
-  timerActionButtonText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: 'bold',
-    marginTop: 2,
+  sidebarLoginPrompt: {
+    marginTop: 15,
+    padding: 10,
+    backgroundColor: 'rgba(0,122,255,0.05)',
+    borderRadius: 12,
+    alignItems: 'center',
+    gap: 6,
+  },
+  sidebarLoginPromptDark: {
+    backgroundColor: 'rgba(77,171,247,0.1)',
+  },
+  sidebarLoginPromptText: {
+    fontSize: 10,
+    fontWeight: '600',
+    textAlign: 'center',
+    opacity: 0.8,
   },
 });

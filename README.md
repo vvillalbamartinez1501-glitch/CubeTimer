@@ -80,4 +80,7 @@ Web: Presiona w en la consola para abrir el navegador.
 
 [ ] Gráficos: Visualización de tendencias y progreso temporal.
 
+Lanzar la build :
+eas build -p android --profile preview
+
 Desarrollado con ❤️ por vvillalbamartinez - Speedcuber & Developer
