@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { StyleSheet, Text, View, ScrollView, Pressable, useColorScheme, Platform } from 'react-native';
-import { cfopAlgs, AlgorithmCase } from '../../constants/learningData';
+import { f2lCases, ollCases, pllCases } from '../../data/cfopFull';
+import { CFOPList } from './CFOPList';
 
-const CFOP_TABS = [
-  { key: 'Cross', label: 'Cross' },
+type Phase = 'F2L' | 'OLL' | 'PLL';
+
+const CFOP_TABS: { key: Phase; label: string }[] = [
   { key: 'F2L', label: 'F2L' },
   { key: 'OLL', label: 'OLL' },
   { key: 'PLL', label: 'PLL' },
@@ -12,9 +14,16 @@ const CFOP_TABS = [
 export const CfopSection = () => {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
-  const [activePhase, setActivePhase] = useState('Cross');
+  const [activePhase, setActivePhase] = useState<Phase>('F2L');
 
-  const cases: AlgorithmCase[] = cfopAlgs[activePhase] || [];
+  const activeData = useMemo(() => {
+    switch (activePhase) {
+      case 'F2L': return f2lCases;
+      case 'OLL': return ollCases;
+      case 'PLL': return pllCases;
+      default: return f2lCases;
+    }
+  }, [activePhase]);
 
   return (
     <View style={styles.container}>
@@ -37,21 +46,9 @@ export const CfopSection = () => {
         ))}
       </ScrollView>
 
-      <ScrollView contentContainerStyle={styles.listContent} showsVerticalScrollIndicator={false}>
-        {cases.map((item, index) => (
-          <View key={index} style={[styles.card, isDark && styles.cardDark]}>
-            <Text style={[styles.caseName, isDark && styles.textDark]}>{item.name}</Text>
-            {item.algorithm !== '—' && (
-              <View style={[styles.algBox, isDark && styles.algBoxDark]}>
-                <Text style={styles.algText}>{item.algorithm}</Text>
-              </View>
-            )}
-            {item.description && (
-              <Text style={[styles.description, isDark && styles.textMuted]}>{item.description}</Text>
-            )}
-          </View>
-        ))}
-      </ScrollView>
+      <View style={styles.listContainer}>
+        <CFOPList data={activeData} />
+      </View>
     </View>
   );
 };
@@ -101,56 +98,7 @@ const styles = StyleSheet.create({
   subTabTextActive: {
     color: '#fff',
   },
-  listContent: {
-    padding: 16,
-    paddingBottom: 40,
-  },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  cardDark: {
-    backgroundColor: '#1e1e1e',
-  },
-  caseName: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#212529',
-    marginBottom: 8,
-  },
-  algBox: {
-    backgroundColor: '#f1f3f5',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginBottom: 8,
-  },
-  algBoxDark: {
-    backgroundColor: '#2c2c2c',
-  },
-  algText: {
-    fontFamily: 'monospace',
-    fontSize: 15,
-    fontWeight: 'bold',
-    color: '#e74c3c',
-    letterSpacing: 0.5,
-  },
-  description: {
-    fontSize: 13,
-    lineHeight: 20,
-    color: '#6c757d',
-  },
-  textDark: {
-    color: '#f8f9fa',
-  },
-  textMuted: {
-    color: '#adb5bd',
+  listContainer: {
+    flex: 1,
   },
 });
