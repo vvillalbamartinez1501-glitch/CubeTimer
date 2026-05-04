@@ -245,6 +245,8 @@ export default function TimerScreen() {
     </View>
   );
 
+  const showUI = timerState === 'idle' || isInspecting || timerState === 'finished';
+
   return (
     <View style={[styles.container, isDark && styles.containerDark]}>
       

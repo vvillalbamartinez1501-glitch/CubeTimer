@@ -9,6 +9,7 @@ import { formatTime } from '../../src/utils/timeFormat';
 import {
   PLL_ALGORITHMS, OLL_ALGORITHMS, Algorithm, groupBySubgroup,
 } from '../../src/constants/algorithms';
+import { useAppStore } from '../../src/store/useAppStore';
 
 const { width: SW } = Dimensions.get('window');
 const DRILL_KEY = '@drill_times';
@@ -63,12 +64,14 @@ function TopFaceDiagram({ size = 60, isDark }: { size?: number; isDark: boolean 
 
 // ─── Algorithm Card ───────────────────────────────────────────────────────────
 function AlgCard({
-  alg, stats, onSelect, isDark,
+  alg, stats, onSelect, isDark, isHighlighted, onToggleHighlight
 }: {
   alg: Algorithm;
   stats: { best: number; avg: number; count: number } | null;
   onSelect: (a: Algorithm) => void;
   isDark: boolean;
+  isHighlighted?: boolean;
+  onToggleHighlight?: (id: string) => void;
 }) {
   const cardBg  = isDark ? '#1e1e2e' : '#fff';
   const textCol = isDark ? '#e9ecef' : '#212529';
@@ -85,6 +88,17 @@ function AlgCard({
       <View style={[styles.algBadge, { backgroundColor: accent + '22' }]}>
         <Text style={[styles.algBadgeText, { color: accent }]}>{alg.group}</Text>
       </View>
+      <Pressable 
+        style={styles.starButton}
+        onPress={(e) => { e.stopPropagation(); onToggleHighlight?.(alg.id); }}
+        hitSlop={8}
+      >
+        <Ionicons 
+          name={isHighlighted ? "star" : "star-outline"} 
+          size={16} 
+          color={isHighlighted ? "#ffd700" : mutedCol} 
+        />
+      </Pressable>
       <Text style={[styles.algName, { color: textCol }]} numberOfLines={1}>{alg.name}</Text>
       <TopFaceDiagram size={48} isDark={isDark} />
       {stats ? (
@@ -311,14 +325,21 @@ export default function TrainScreen() {
   const [selectedAlg, setSelectedAlg] = useState<Algorithm | null>(null);
   const [drillTimes, setDrillTimes]   = useState<DrillTime[]>([]);
   const [filterGroup, setFilterGroup] = useState<string | null>(null);
+  const [showOnlyHighlighted, setShowOnlyHighlighted] = useState(false);
+
+  const { highlightedAlgs, toggleHighlight } = useAppStore();
 
   const algorithms = tab === 'PLL' ? PLL_ALGORITHMS : OLL_ALGORITHMS;
   const grouped    = groupBySubgroup(algorithms);
   const subgroups  = Object.keys(grouped);
 
-  const filtered = filterGroup
+  let filtered = filterGroup
     ? algorithms.filter(a => a.subgroup === filterGroup)
     : algorithms;
+
+  if (showOnlyHighlighted) {
+    filtered = filtered.filter(a => highlightedAlgs.includes(a.id));
+  }
 
   const reloadTimes = useCallback(async () => {
     setDrillTimes(await loadDrillTimes());
@@ -379,6 +400,22 @@ export default function TrainScreen() {
         ))}
       </ScrollView>
 
+      {/* ── View Selector (Todos / Destacados) ── */}
+      <View style={styles.viewToggleRow}>
+        <Pressable 
+          style={[styles.viewToggleBtn, !showOnlyHighlighted && styles.viewToggleBtnActive]}
+          onPress={() => setShowOnlyHighlighted(false)}
+        >
+          <Text style={[styles.viewToggleText, !showOnlyHighlighted && styles.viewToggleTextActive]}>Todos</Text>
+        </Pressable>
+        <Pressable 
+          style={[styles.viewToggleBtn, showOnlyHighlighted && styles.viewToggleBtnActive]}
+          onPress={() => setShowOnlyHighlighted(true)}
+        >
+          <Text style={[styles.viewToggleText, showOnlyHighlighted && styles.viewToggleTextActive]}>Destacados</Text>
+        </Pressable>
+      </View>
+
       {/* ── Algorithm grid ── */}
       <FlatList
         data={filtered}
@@ -392,8 +429,20 @@ export default function TrainScreen() {
             stats={getStatsForAlg(drillTimes, item.id)}
             onSelect={setSelectedAlg}
             isDark={isDark}
+            isHighlighted={highlightedAlgs.includes(item.id)}
+            onToggleHighlight={toggleHighlight}
           />
         )}
+        ListEmptyComponent={
+          showOnlyHighlighted ? (
+            <View style={styles.emptyContainer}>
+              <Ionicons name="star-outline" size={48} color={mutedCol} />
+              <Text style={[styles.emptyText, { color: textCol }]}>
+                Aún no has destacado ningún algoritmo. Toca la estrella en un algoritmo para guardarlo aquí.
+              </Text>
+            </View>
+          ) : null
+        }
       />
 
       {/* ── Drill timer modal ── */}
@@ -441,6 +490,45 @@ const styles = StyleSheet.create({
   grid: { padding: 16 },
   gridRow: { gap: 8, marginBottom: 8 },
 
+  // View Toggle
+  viewToggleRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    gap: 8,
+  },
+  viewToggleBtn: {
+    flex: 1,
+    paddingVertical: 8,
+    alignItems: 'center',
+    borderRadius: 8,
+    backgroundColor: 'rgba(0,0,0,0.05)',
+  },
+  viewToggleBtnActive: {
+    backgroundColor: 'rgba(0,122,255,0.1)',
+  },
+  viewToggleText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#868e96',
+  },
+  viewToggleTextActive: {
+    color: '#007aff',
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 32,
+    marginTop: 40,
+  },
+  emptyText: {
+    textAlign: 'center',
+    marginTop: 16,
+    fontSize: 14,
+    lineHeight: 20,
+    opacity: 0.8,
+  },
+
   // Alg card
   algCard: {
     width: CARD_W, borderRadius: 14, padding: 10, alignItems: 'center',
@@ -449,6 +537,7 @@ const styles = StyleSheet.create({
   },
   algBadge: { borderRadius: 8, paddingHorizontal: 6, paddingVertical: 2, marginBottom: 6 },
   algBadgeText: { fontSize: 9, fontWeight: '800', letterSpacing: 0.5 },
+  starButton: { position: 'absolute', top: 4, right: 4, padding: 4, zIndex: 10 },
   algName: { fontSize: 11, fontWeight: '700', marginBottom: 8, textAlign: 'center' },
   algStats: { marginTop: 6, alignItems: 'center', gap: 2 },
   algStatText: { fontSize: 10, fontWeight: '600' },

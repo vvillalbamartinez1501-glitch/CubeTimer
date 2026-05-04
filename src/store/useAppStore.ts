@@ -20,11 +20,13 @@ interface AppState {
   activeSessionId: string;
   previousSessionId: string | null;
   sessions: Session[];
+  highlightedAlgs: string[];
 
   // ── Actions ──
   generateNewScramble: (puzzleId?: string) => void;
   setActiveCategory: (id: string, customName?: string) => void;
   setActiveUser: (id: number) => void;
+  toggleHighlight: (algId: string) => void;
   
   // ── Session Actions ──
   createSession: (name: string) => void;
@@ -55,6 +57,7 @@ export const useAppStore = create<AppState>()(
           createdAt: new Date().toISOString(),
         }
       ],
+      highlightedAlgs: [],
 
       generateNewScramble: (puzzleId?: string) => {
         const id = puzzleId || get().activeCategoryId;
@@ -86,6 +89,15 @@ export const useAppStore = create<AppState>()(
 
       setActiveUser: (id: number) => {
         set({ activeUserId: id });
+      },
+
+      toggleHighlight: (algId: string) => {
+        const currentHighlighted = get().highlightedAlgs;
+        if (currentHighlighted.includes(algId)) {
+          set({ highlightedAlgs: currentHighlighted.filter(id => id !== algId) });
+        } else {
+          set({ highlightedAlgs: [...currentHighlighted, algId] });
+        }
       },
 
       // ── Session Logic ──

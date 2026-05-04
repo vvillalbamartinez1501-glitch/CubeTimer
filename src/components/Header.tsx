@@ -125,7 +125,6 @@ export const Header: React.FC<HeaderProps> = ({ titleKey }) => {
           </View>
         </View>
       )}
-    </View>
 
       {/* Modal de Sesiones */}
       <Modal
