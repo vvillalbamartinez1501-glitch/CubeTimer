@@ -14,7 +14,7 @@ export const AlgorithmImage = ({ alg, type, size = 100 }: AlgorithmImageProps) =
 
   // Construct VisualCube URL
   // Base format
-  let url = `http://cube.crider.co.uk/visualcube.php?fmt=svg&size=${size}&bg=t&case=${encodeURIComponent(alg)}`;
+  let url = `https://visualcube.philipp-baumann.com/visualcube.php?fmt=svg&size=${size}&bg=t&case=${encodeURIComponent(alg)}`;
 
   // Apply styling based on phase
   if (type === 'OLL' || type === 'PLL') {
