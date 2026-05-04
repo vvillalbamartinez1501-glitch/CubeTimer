@@ -377,31 +377,33 @@ export default function TrainScreen() {
       </View>
 
       {/* ── Subgroup filter chips ── */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.filterRow} style={styles.filterScroll}>
-        <Pressable
-          style={[styles.filterChip, !filterGroup && { backgroundColor: accent }]}
-          onPress={() => setFilterGroup(null)}
-        >
-          <Text style={[styles.filterChipText, { color: !filterGroup ? '#fff' : mutedCol }]}>
-            All
-          </Text>
-        </Pressable>
-        {subgroups.map(sg => (
+      <View style={{ height: 64, backgroundColor: bg }}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filterRow} style={styles.filterScroll}>
           <Pressable
-            key={sg}
-            style={[styles.filterChip, filterGroup === sg && { backgroundColor: accent }]}
-            onPress={() => setFilterGroup(sg === filterGroup ? null : sg)}
+            style={[styles.filterChip, !filterGroup && { backgroundColor: accent }]}
+            onPress={() => setFilterGroup(null)}
           >
-            <Text style={[styles.filterChipText, { color: filterGroup === sg ? '#fff' : mutedCol }]}>
-              {sg}
+            <Text style={[styles.filterChipText, { color: !filterGroup ? '#fff' : mutedCol }]}>
+              All
             </Text>
           </Pressable>
-        ))}
-      </ScrollView>
+          {subgroups.map(sg => (
+            <Pressable
+              key={sg}
+              style={[styles.filterChip, filterGroup === sg && { backgroundColor: accent }]}
+              onPress={() => setFilterGroup(sg === filterGroup ? null : sg)}
+            >
+              <Text style={[styles.filterChipText, { color: filterGroup === sg ? '#fff' : mutedCol }]}>
+                {sg}
+              </Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+      </View>
 
       {/* ── View Selector (Todos / Destacados) ── */}
-      <View style={styles.viewToggleRow}>
+      <View style={[styles.viewToggleRow, { backgroundColor: bg }]}>
         <Pressable 
           style={[styles.viewToggleBtn, !showOnlyHighlighted && styles.viewToggleBtnActive]}
           onPress={() => setShowOnlyHighlighted(false)}
@@ -478,7 +480,7 @@ const styles = StyleSheet.create({
   mainTabCount: { fontSize: 11, marginTop: 2 },
 
   // Filters
-  filterScroll: { maxHeight: 52 },
+  filterScroll: { height: 64, flexGrow: 0 },
   filterRow: { paddingHorizontal: 16, paddingVertical: 10, gap: 8, flexDirection: 'row' },
   filterChip: {
     paddingHorizontal: 12, paddingVertical: 5, borderRadius: 16,
@@ -492,10 +494,11 @@ const styles = StyleSheet.create({
 
   // View Toggle
   viewToggleRow: {
+    height: 56,
     flexDirection: 'row',
     paddingHorizontal: 16,
-    paddingVertical: 8,
     gap: 8,
+    alignItems: 'center',
   },
   viewToggleBtn: {
     flex: 1,
