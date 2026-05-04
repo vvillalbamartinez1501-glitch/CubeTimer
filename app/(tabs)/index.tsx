@@ -77,6 +77,7 @@ export default function TimerScreen() {
     hasPenalty,
     onPressDown,
     onPressUp,
+    stopTimer,
     resetTimer,
     addPenalty,
   } = useSpeedTimer({
@@ -273,6 +274,7 @@ export default function TimerScreen() {
             style={styles.timerArea}
             onPressIn={onPressDown}
             onPressOut={onPressUp}
+            onPress={stopTimer}
           >
             <Text style={[styles.timerText, isMobile && { fontSize: 80 }, { color: timerColor }]}>
               {displayText}
