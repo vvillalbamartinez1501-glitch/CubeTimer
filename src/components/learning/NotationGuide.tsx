@@ -12,7 +12,7 @@ export function NotationGuide({ cubeSize }: { cubeSize: string }) {
 
   const renderItem = ({ item }: { item: any }) => (
     <View style={[styles.card, isDark && styles.cardDark]}>
-      <AlgorithmImage path={item.imagePath} style={styles.image} />
+      <AlgorithmImage imageKey={item.imagePath} style={styles.image} />
       <Text style={[styles.label, isDark && styles.labelDark]}>{item.name}</Text>
     </View>
   );

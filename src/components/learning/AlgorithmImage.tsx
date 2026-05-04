@@ -3,12 +3,12 @@ import { Image, ImageStyle, StyleSheet, View } from 'react-native';
 import { CubeImages } from '../../data/imageIndex';
 
 interface AlgorithmImageProps {
-  path: string; // ej: "resolution.3x3.full_fridrich.oll1"
+  imageKey: string; // ej: "notation.3x3.R"
   style?: ImageStyle;
 }
 
-export function AlgorithmImage({ path, style }: AlgorithmImageProps) {
-  const parts = path.split('.');
+export function AlgorithmImage({ imageKey, style }: AlgorithmImageProps) {
+  const parts = imageKey.split('.');
   let current: any = CubeImages;
   
   for (const part of parts) {

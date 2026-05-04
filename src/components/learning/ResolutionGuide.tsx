@@ -22,11 +22,11 @@ export function ResolutionGuide({ cubeSize, method }: { cubeSize: string, method
 
   const renderItem = ({ item }: { item: any }) => (
     <View style={[styles.card, isDark && styles.cardDark]}>
-      <AlgorithmImage path={item.imagePath} style={styles.image} />
+      <AlgorithmImage imageKey={item.imagePath} style={styles.image} />
       <View style={styles.info}>
-        <Text style={[styles.label, isDark && styles.labelDark]}>{item.name}</Text>
+        <Text style={[styles.label, isDark && styles.labelDark]} numberOfLines={1}>{item.name}</Text>
         {item.algorithm && (
-          <Text style={[styles.algorithm, isDark && styles.textDark]}>{item.algorithm}</Text>
+          <Text style={[styles.algorithm, isDark && styles.textDark]} numberOfLines={2}>{item.algorithm}</Text>
         )}
       </View>
     </View>
@@ -38,7 +38,9 @@ export function ResolutionGuide({ cubeSize, method }: { cubeSize: string, method
         data={data}
         renderItem={renderItem}
         keyExtractor={item => item.id}
+        numColumns={2}
         contentContainerStyle={styles.list}
+        columnWrapperStyle={styles.row}
       />
     </View>
   );
@@ -52,8 +54,12 @@ const styles = StyleSheet.create({
     padding: 16,
     gap: 12,
   },
+  row: {
+    justifyContent: 'space-between',
+    gap: 12,
+  },
   card: {
-    flexDirection: 'row',
+    flex: 1,
     backgroundColor: '#fff',
     borderRadius: 12,
     padding: 12,
@@ -68,12 +74,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#1e1e2e',
   },
   image: {
-    width: 80,
-    height: 80,
-    marginRight: 16,
+    width: 100,
+    height: 100,
+    marginBottom: 8,
   },
   info: {
-    flex: 1,
+    width: '100%',
+    alignItems: 'center',
   },
   label: {
     fontSize: 16,
