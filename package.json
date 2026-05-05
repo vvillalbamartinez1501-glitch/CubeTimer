@@ -8,7 +8,9 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "download-images": "node ./scripts/download_from_csv.js",
+    "download-notation": "node ./scripts/download_notation.js"
   },
   "dependencies": {
     "@expo/metro-runtime": "~6.1.2",
@@ -18,6 +20,7 @@
     "@react-navigation/elements": "^2.6.3",
     "@react-navigation/native": "^7.1.8",
     "@supabase/supabase-js": "^2.105.1",
+    "csv-parser": "^3.2.0",
     "expo": "~54.0.33",
     "expo-constants": "~18.0.13",
     "expo-font": "~14.0.11",
