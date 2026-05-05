@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { generateScramble } from '../utils/scrambler';
-import type { User } from '@supabase/supabase-js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export interface Session {
@@ -33,10 +32,6 @@ interface AppState {
   renameSession: (id: string, newName: string) => void;
   deleteSession: (id: string) => void;
   setActiveSession: (id: string) => void;
-
-  // ── Auth ──
-  supabaseUser: User | null;
-  setSupabaseUser: (user: User | null) => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -146,10 +141,6 @@ export const useAppStore = create<AppState>()(
           set({ activeSessionId: id, previousSessionId: null });
         }
       },
-
-      // ── Auth ──
-      supabaseUser: null,
-      setSupabaseUser: (user) => set({ supabaseUser: user }),
     }),
     {
       name: '@cube_app_state',

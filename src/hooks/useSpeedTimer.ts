@@ -74,6 +74,16 @@ export function useSpeedTimer({ isInspectionEnabled, onFinish }: UseSpeedTimerPr
     setIsInspecting(false);
   };
 
+  const stopTimer = useCallback(() => {
+    if (stateRef.current === 'running') {
+      stopRAF();
+      const finalTime = Date.now() - startTimeRef.current;
+      setDisplayTime(finalTime);
+      setTimerStateSync('finished');
+      if (onFinish) onFinish(finalTime);
+    }
+  }, [onFinish]);
+
   const onPressDown = useCallback(() => {
     const currentState = stateRef.current;
     console.log('[Timer] onPressDown, current:', currentState);
@@ -101,14 +111,10 @@ export function useSpeedTimer({ isInspectionEnabled, onFinish }: UseSpeedTimerPr
     }
 
     if (currentState === 'running') {
-      stopRAF();
-      const finalTime = Date.now() - startTimeRef.current;
-      setDisplayTime(finalTime);
-      setTimerStateSync('finished');
-      if (onFinish) onFinish(finalTime);
+      stopTimer();
       return;
     }
-  }, [isInspectionEnabled, onFinish]);
+  }, [isInspectionEnabled, stopTimer]);
 
   const onPressUp = useCallback(() => {
     const currentState = stateRef.current;
@@ -180,6 +186,7 @@ export function useSpeedTimer({ isInspectionEnabled, onFinish }: UseSpeedTimerPr
     hasPenalty,
     onPressDown,
     onPressUp,
+    stopTimer,
     resetTimer,
     addPenalty,
   };

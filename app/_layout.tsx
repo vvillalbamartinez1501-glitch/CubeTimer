@@ -9,41 +9,10 @@ import 'react-native-reanimated';
 import '../src/i18n';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { supabase } from '../src/lib/supabase';
 import { useAppStore } from '../src/store/useAppStore';
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
-  const setSupabaseUser = useAppStore(s => s.setSupabaseUser);
-
-  useEffect(() => {
-    const init = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        setSupabaseUser(session?.user ?? null);
-      } catch (e) {
-        console.warn('[RootLayout] getSession error (app continues):', e);
-        setSupabaseUser(null);
-      }
-    };
-
-    init();
-
-    let subscription: { unsubscribe: () => void } | undefined;
-    try {
-      const { data } = supabase.auth.onAuthStateChange((_event, session) => {
-        setSupabaseUser(session?.user ?? null);
-      });
-      subscription = data.subscription;
-    } catch (e) {
-      console.warn('[RootLayout] onAuthStateChange error (app continues):', e);
-    }
-
-    return () => {
-      try { subscription?.unsubscribe(); } catch (_) {}
-    };
-  }, []);
-
 
   // NEVER return null — routes must always be available
   return (

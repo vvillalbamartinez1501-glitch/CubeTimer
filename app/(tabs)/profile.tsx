@@ -1,142 +1,35 @@
-import React, { useState } from 'react';
-import {
-  StyleSheet, Text, View, Pressable, ScrollView, TextInput,
-  ActivityIndicator, Alert, useColorScheme, Platform,
-  KeyboardAvoidingView,
-} from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { StyleSheet, Text, View, ScrollView, useColorScheme } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
-import { supabase } from '../../src/lib/supabase';
 import { useAppStore } from '../../src/store/useAppStore';
-
-// ─── Auth Form ────────────────────────────────────────────────────────────────
-function AuthForm({ isDark }: { isDark: boolean }) {
-  const [mode, setMode] = useState<'login' | 'register'>('login');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  const accent   = isDark ? '#4dabf7' : '#228be6';
-  const cardBg   = isDark ? '#1e1e2e' : '#fff';
-  const inputBg  = isDark ? '#2a2a3e' : '#f1f3f5';
-  const textCol  = isDark ? '#e9ecef' : '#212529';
-  const mutedCol = isDark ? '#868e96' : '#6c757d';
-
-  const handleAuth = async () => {
-    if (!email.trim() || !password.trim()) {
-      Alert.alert('Error', 'Please fill in all fields.');
-      return;
-    }
-    setLoading(true);
-    try {
-      if (mode === 'login') {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) Alert.alert('Login failed', error.message);
-      } else {
-        const { error } = await supabase.auth.signUp({ email, password });
-        if (error) Alert.alert('Registration failed', error.message);
-        else Alert.alert('✅ Account created', 'Check your email to confirm, then log in.');
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <View style={[styles.authCard, { backgroundColor: cardBg }]}>
-        <View style={[styles.authIconBg, { backgroundColor: accent + '22' }]}>
-          <Ionicons name="cube-outline" size={36} color={accent} />
-        </View>
-        <Text style={[styles.authTitle, { color: textCol }]}>
-          {mode === 'login' ? 'Sign in to CubeTimer' : 'Create an account'}
-        </Text>
-        <Text style={[styles.authSubtitle, { color: mutedCol }]}>
-          {mode === 'login' ? 'Sync records across devices' : 'Start tracking your cloud progress'}
-        </Text>
-
-        <View style={[styles.inputWrap, { backgroundColor: inputBg }]}>
-          <Ionicons name="mail-outline" size={18} color={mutedCol} style={styles.inputIcon} />
-          <TextInput style={[styles.input, { color: textCol }]} placeholder="Email"
-            placeholderTextColor={mutedCol} value={email} onChangeText={setEmail}
-            autoCapitalize="none" keyboardType="email-address" autoComplete="email" />
-        </View>
-
-        <View style={[styles.inputWrap, { backgroundColor: inputBg }]}>
-          <Ionicons name="lock-closed-outline" size={18} color={mutedCol} style={styles.inputIcon} />
-          <TextInput style={[styles.input, { color: textCol }]} placeholder="Password"
-            placeholderTextColor={mutedCol} value={password} onChangeText={setPassword}
-            secureTextEntry autoComplete={mode === 'register' ? 'new-password' : 'current-password'} />
-        </View>
-
-        <Pressable
-          style={({ pressed }) => [styles.authButton, { backgroundColor: accent, opacity: pressed ? 0.85 : 1 }]}
-          onPress={handleAuth} disabled={loading}
-        >
-          {loading ? <ActivityIndicator color="#fff" /> :
-            <Text style={styles.authButtonText}>{mode === 'login' ? 'Sign In' : 'Create Account'}</Text>}
-        </Pressable>
-
-        <Pressable onPress={() => setMode(mode === 'login' ? 'register' : 'login')}>
-          <Text style={[styles.toggleText, { color: accent }]}>
-            {mode === 'login' ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
-          </Text>
-        </Pressable>
-      </View>
-    </KeyboardAvoidingView>
-  );
-}
-
-// ─── Logged-in Profile Card ───────────────────────────────────────────────────
-function ProfileCard({ isDark }: { isDark: boolean }) {
-  const user = useAppStore(s => s.supabaseUser);
-  const [loading, setLoading] = useState(false);
-  const accent  = isDark ? '#4dabf7' : '#228be6';
-  const cardBg  = isDark ? '#1e1e2e' : '#fff';
-  const textCol = isDark ? '#e9ecef' : '#212529';
-  const mutedCol= isDark ? '#868e96' : '#6c757d';
-
-  return (
-    <View style={[styles.authCard, { backgroundColor: cardBg }]}>
-      <View style={[styles.authIconBg, { backgroundColor: accent + '22' }]}>
-        <Ionicons name="person" size={36} color={accent} />
-      </View>
-      <Text style={[styles.authTitle, { color: textCol }]}>
-        {user?.email?.split('@')[0] ?? 'Cuber'}
-      </Text>
-      <Text style={[styles.authSubtitle, { color: mutedCol }]}>{user?.email}</Text>
-      <View style={[styles.badgeRow, { borderColor: isDark ? '#2a2a3e' : '#e9ecef' }]}>
-        <View style={[styles.badge, { backgroundColor: accent + '18' }]}>
-          <Ionicons name="cloud-done-outline" size={14} color={accent} />
-          <Text style={[styles.badgeText, { color: accent }]}>Cloud Sync Active</Text>
-        </View>
-      </View>
-      <Pressable
-        style={({ pressed }) => [styles.signOutButton, { borderColor: '#e03131', opacity: pressed ? 0.7 : 1 }]}
-        onPress={async () => { setLoading(true); await supabase.auth.signOut(); setLoading(false); }}
-        disabled={loading}
-      >
-        {loading ? <ActivityIndicator color="#e03131" size="small" /> : <>
-          <Ionicons name="log-out-outline" size={18} color="#e03131" />
-          <Text style={[styles.signOutText, { color: '#e03131' }]}>Sign Out</Text>
-        </>}
-      </Pressable>
-    </View>
-  );
-}
-
 import { Header } from '../../src/components/Header';
+import { getTotalSolves, getCategorySolveCount } from '../../src/database/operations';
 
 export default function ProfileScreen() {
-  console.log('[ProfileScreen] mounted');
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const { t } = useTranslation();
-  const supabaseUser = useAppStore(s => s.supabaseUser);
-  const bg      = isDark ? '#121212' : '#f0f4f8';
-  const cardBg  = isDark ? '#1e1e2e' : '#fff';
+  const { activeUserId } = useAppStore();
+  
+  const [totalSolves, setTotalSolves] = useState(0);
+  const [solves3x3, setSolves3x3] = useState(0);
+
+  useEffect(() => {
+    const loadStats = async () => {
+      const total = await getTotalSolves(activeUserId);
+      const s3x3 = await getCategorySolveCount(activeUserId, '3x3');
+      setTotalSolves(total);
+      setSolves3x3(s3x3);
+    };
+    loadStats();
+  }, [activeUserId]);
+
+  const bg = isDark ? '#121212' : '#f0f4f8';
+  const cardBg = isDark ? '#1e1e2e' : '#fff';
   const textCol = isDark ? '#e9ecef' : '#212529';
-  const mutedCol= isDark ? '#868e96' : '#6c757d';
+  const mutedCol = isDark ? '#868e96' : '#6c757d';
+  const accent = isDark ? '#4dabf7' : '#228be6';
 
   return (
     <View style={{ flex: 1, backgroundColor: bg }}>
@@ -146,119 +39,81 @@ export default function ProfileScreen() {
         contentContainerStyle={styles.contentContainer}
         keyboardShouldPersistTaps="handled"
       >
-      {/* ── Auth / Profile ────────────────────────────── */}
-      {supabaseUser ? <ProfileCard isDark={isDark} /> : <AuthForm isDark={isDark} />}
-
-      {/* ── App Info ──────────────────────────────────── */}
-      <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { color: textCol, paddingLeft: 4 }]}>
-          ℹ️ {t('profile.appInfo')}
-        </Text>
-        <View style={[styles.card, { backgroundColor: cardBg }]}>
-          <View style={styles.infoRow}>
-            <Text style={[styles.infoLabel, { color: mutedCol }]}>CubeTimer</Text>
-            <Text style={[styles.infoValue, { color: textCol }]}>v1.2.0</Text>
+        {/* Profile Info */}
+        <View style={[styles.profileCard, { backgroundColor: cardBg }]}>
+          <View style={[styles.iconBg, { backgroundColor: accent + '22' }]}>
+            <Ionicons name="person" size={40} color={accent} />
           </View>
-          <View style={[styles.infoRow, { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: isDark ? '#333' : '#e9ecef' }]}>
-            <Text style={[styles.infoLabel, { color: mutedCol }]}>Backend</Text>
-            <Text style={[{ fontSize: 15, fontWeight: '600' }, { color: supabaseUser ? '#37b24d' : mutedCol }]}>
-              {supabaseUser ? '☁️ Supabase' : '📱 Local'}
-            </Text>
+          <Text style={[styles.title, { color: textCol }]}>Cuber Local</Text>
+          <Text style={[styles.subtitle, { color: mutedCol }]}>Progreso guardado en el dispositivo</Text>
+        </View>
+
+        {/* Local Stats */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: textCol }]}>
+            📊 Estadísticas Generales
+          </Text>
+          <View style={[styles.card, { backgroundColor: cardBg }]}>
+            <View style={styles.infoRow}>
+              <Text style={[styles.infoLabel, { color: mutedCol }]}>Total Resoluciones</Text>
+              <Text style={[styles.infoValue, { color: textCol }]}>{totalSolves}</Text>
+            </View>
+            <View style={[styles.infoRow, { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: isDark ? '#333' : '#e9ecef' }]}>
+              <Text style={[styles.infoLabel, { color: mutedCol }]}>Resoluciones 3x3</Text>
+              <Text style={[styles.infoValue, { color: textCol }]}>{solves3x3}</Text>
+            </View>
           </View>
         </View>
-      </View>
 
-      <View style={{ height: 32 }} />
+        {/* App Info */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: textCol }]}>
+            ℹ️ Información de la App
+          </Text>
+          <View style={[styles.card, { backgroundColor: cardBg }]}>
+            <View style={styles.infoRow}>
+              <Text style={[styles.infoLabel, { color: mutedCol }]}>CubeTimer</Text>
+              <Text style={[styles.infoValue, { color: textCol }]}>v1.2.0 (Local First)</Text>
+            </View>
+            <View style={[styles.infoRow, { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: isDark ? '#333' : '#e9ecef' }]}>
+              <Text style={[styles.infoLabel, { color: mutedCol }]}>Almacenamiento</Text>
+              <Text style={[{ fontSize: 15, fontWeight: '600' }, { color: '#37b24d' }]}>
+                📱 Memoria Local
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        <View style={{ height: 32 }} />
       </ScrollView>
     </View>
   );
 }
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   container: { flex: 1 },
   contentContainer: { padding: 16, paddingBottom: 40 },
-
-  // Streak
-  streakCard: {
-    flexDirection: 'row', alignItems: 'center', borderRadius: 20,
-    padding: 20, marginBottom: 16,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.1, shadowRadius: 10, elevation: 4,
-  },
-  streakMain: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
-  streakFire: { fontSize: 44 },
-  streakCount: { fontSize: 40, fontWeight: '900', lineHeight: 44 },
-  streakLabel: { fontSize: 12, fontWeight: '500', marginTop: 2 },
-  streakDivider: { width: 1, height: 50, marginHorizontal: 16 },
-  streakAchCol: { alignItems: 'center' },
-  streakAchCount: { fontSize: 24, fontWeight: '900' },
-
-  // Auth card
-  authCard: {
-    borderRadius: 20, padding: 24, marginBottom: 16, alignItems: 'center',
+  
+  profileCard: {
+    borderRadius: 20, padding: 24, marginBottom: 24, alignItems: 'center',
     shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1, shadowRadius: 12, elevation: 4,
   },
-  authIconBg: { width: 72, height: 72, borderRadius: 36, justifyContent: 'center', alignItems: 'center', marginBottom: 16 },
-  authTitle: { fontSize: 20, fontWeight: '800', marginBottom: 4, textAlign: 'center' },
-  authSubtitle: { fontSize: 13, textAlign: 'center', marginBottom: 24, lineHeight: 18 },
-  inputWrap: { flexDirection: 'row', alignItems: 'center', borderRadius: 12, marginBottom: 12, paddingHorizontal: 14, width: '100%' },
-  inputIcon: { marginRight: 10 },
-  input: { flex: 1, fontSize: 15, paddingVertical: 14 },
-  authButton: { width: '100%', borderRadius: 12, paddingVertical: 14, alignItems: 'center', marginTop: 4, marginBottom: 16 },
-  authButtonText: { color: '#fff', fontSize: 15, fontWeight: '700' },
-  toggleText: { fontSize: 13, fontWeight: '600', textDecorationLine: 'underline' },
-  badgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, borderTopWidth: 1, paddingTop: 16, marginTop: 8, marginBottom: 20, width: '100%', justifyContent: 'center' },
-  badge: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20 },
-  badgeText: { fontSize: 12, fontWeight: '600' },
-  signOutButton: { flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1.5, borderRadius: 12, paddingVertical: 11, paddingHorizontal: 24 },
-  signOutText: { fontSize: 14, fontWeight: '700' },
-
-  // Goal
-  goalCard: { marginBottom: 16, padding: 16 },
-  sectionHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
-  sectionTitle: { fontSize: 15, fontWeight: '700' },
-  goalTarget: { fontSize: 22, fontWeight: '800', marginBottom: 4 },
-  goalCurrent: { fontSize: 13, marginBottom: 10 },
-  progressTrack: { height: 10, borderRadius: 5, overflow: 'hidden', marginBottom: 6 },
-  progressFill: { height: '100%', borderRadius: 5 },
-  goalAchieved: { fontSize: 13, fontWeight: '700', marginTop: 4 },
-  changeGoalBtn: { marginTop: 10, alignSelf: 'flex-end' },
-  goalInputRow: { flexDirection: 'row', gap: 10, alignItems: 'center' },
-  goalSetBtn: { borderRadius: 10, paddingVertical: 12, paddingHorizontal: 18 },
-  goalSetBtnText: { color: '#fff', fontWeight: '700', fontSize: 14 },
-
-  // Achievements grid
-  achieveGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  achieveCard: {
-    borderRadius: 14, padding: 10, alignItems: 'center',
-    borderWidth: 1.5, borderColor: 'transparent',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06, shadowRadius: 6, elevation: 2,
+  iconBg: { 
+    width: 80, height: 80, borderRadius: 40, justifyContent: 'center', 
+    alignItems: 'center', marginBottom: 16 
   },
-  achieveCardUnlocked: {
-    shadowOpacity: 0.14, shadowRadius: 10, elevation: 4,
-  },
-  achieveIconBg: { width: 48, height: 48, borderRadius: 24, justifyContent: 'center', alignItems: 'center', marginBottom: 8 },
-  achieveTitle: { fontSize: 11, textAlign: 'center', lineHeight: 14, marginBottom: 4 },
-  achieveDate: { fontSize: 9, textAlign: 'center', lineHeight: 12 },
+  title: { fontSize: 22, fontWeight: '800', marginBottom: 6, textAlign: 'center' },
+  subtitle: { fontSize: 14, textAlign: 'center', marginBottom: 8 },
 
-  // Language
-  section: { marginBottom: 20 },
+  section: { marginBottom: 24 },
+  sectionTitle: { fontSize: 16, fontWeight: '700', paddingLeft: 4, marginBottom: 10 },
   card: {
     borderRadius: 16, overflow: 'hidden',
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.07, shadowRadius: 8, elevation: 3,
   },
-  langRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 14, paddingHorizontal: 16 },
-  langRowBorder: { borderBottomWidth: StyleSheet.hairlineWidth },
-  langInfo: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  langFlag: { fontSize: 24 },
-  langLabel: { fontSize: 16, fontWeight: '500' },
-
-  // Info
-  infoRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 14, paddingHorizontal: 16 },
+  infoRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 16, paddingHorizontal: 16 },
   infoLabel: { fontSize: 15 },
   infoValue: { fontSize: 15, fontWeight: '600' },
 });
