@@ -50,28 +50,6 @@
 - **Traducciones:** `i18next` & `react-i18next`
 - **Iconos:** Ionicons (@expo/vector-icons)
 
-## 📦 Instalación y Uso
-
-1. **Clona este repositorio:**
-   ```bash
-   git clone [https://github.com/tu-usuario/cubetimer-pro.git](https://github.com/tu-usuario/cubetimer-pro.git)
-   cd cubetimer-pro
-
-
-   Instala las dependencias:
-
-Bash
-npm install
-Inicia el entorno de desarrollo:
-
-Bash
-npx expo start
-
-Visualización:
-
-Móvil: Escanea el código QR con la app Expo Go.
-
-Web: Presiona w en la consola para abrir el navegador.
 
 🗺️ Próximos Pasos (Roadmap)
 [ ] Sincronización Cloud: Integración con Supabase para cuentas de usuario.
