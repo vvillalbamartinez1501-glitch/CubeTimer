@@ -1,6 +1,6 @@
 // Generado automáticamente por scripts/download_assets.js
 
-export const CubeImages: any = {
+export const CubeAssets: any = {
   "notation": {
     "2x2": {
       "L": require('../../assets/images/cubes/notation/2x2/L.webp'),

@@ -8,7 +8,6 @@ import {
   StyleSheet,
   Switch,
   Text,
-  useColorScheme,
   View,
   Platform,
   useWindowDimensions,
@@ -19,8 +18,8 @@ import { getCategorySolveCount, getSolves, getTotalSolves, saveSolve, deleteSolv
 import { useSpeedTimer } from '../../src/hooks/useSpeedTimer';
 import { useGamificationStore } from '../../src/store/gamificationStore';
 import { Header } from '../../src/components/Header';
-
 import { useAppStore } from '../../src/store/useAppStore';
+import { useThemeColors } from '../../src/hooks/useThemeColors';
 
 // ─── Formateador Local (Garantiza . para centésimas) ─────────────────────────
 const formatTimeLocal = (ms: number): string => {
@@ -37,8 +36,7 @@ const formatTimeLocal = (ms: number): string => {
 };
 
 export default function TimerScreen() {
-  const colorScheme = useColorScheme();
-  const isDark      = colorScheme === 'dark';
+  const { isDark, background, text, muted, primary, border, surface } = useThemeColors();
   const { t }       = useTranslation();
   const insets      = useSafeAreaInsets();
   const { width }   = useWindowDimensions();
@@ -185,8 +183,9 @@ export default function TimerScreen() {
   const timerColor = useMemo(() => {
     if (timerState === 'holding') return '#00C851';
     if (isInspecting && hasPenalty) return '#ff4444';
-    return isDark ? '#fff' : '#212529';
-  }, [timerState, isInspecting, hasPenalty, isDark]);
+    if (timerState === 'running') return primary;
+    return text;
+  }, [timerState, isInspecting, hasPenalty, primary, text]);
 
   const displayText = useMemo(() => {
     if (isInspecting) return hasPenalty ? '+2' : String(displayTime);
@@ -204,20 +203,26 @@ export default function TimerScreen() {
   const renderSidebar = () => (
     <View style={[
       styles.sidebar, 
-      isDark && styles.sidebarDark,
-      isMobile && { width: '100%', borderRightWidth: 0, borderTopWidth: 1, borderTopColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }
+      { 
+        backgroundColor: surface,
+        borderRightColor: border,
+        width: isMobile ? '100%' : 180,
+        borderRightWidth: isMobile ? 0 : 1,
+        borderTopWidth: isMobile ? 1 : 0,
+        borderTopColor: border
+      }
     ]}>
       <View style={styles.sidebarHeader}>
-        <Text style={[styles.sidebarTitle, isDark && styles.textDark]}>Historial</Text>
+        <Text style={[styles.sidebarTitle, { color: muted }]}>Historial</Text>
         <Pressable onPress={handleClearSession} style={styles.clearSessionBtn}>
           <Ionicons name="trash" size={16} color="#ff3b30" />
         </Pressable>
       </View>
       <View style={styles.solvesList}>
         {solves.slice(0, 15).map((solve, index) => (
-          <View key={solve.id} style={styles.solveItem}>
+          <View key={solve.id} style={[styles.solveItem, { borderBottomColor: border }]}>
             <Text style={styles.solveIndex}>{solves.length - index}</Text>
-            <Text style={[styles.solveTime, isDark && styles.textDark]}>
+            <Text style={[styles.solveTime, { color: text }]}>
               {formatTimeLocal(solve.time)}
             </Text>
             <Pressable onPress={() => handleDelete(solve.id)} style={styles.sidebarDeleteBtn}>
@@ -228,8 +233,6 @@ export default function TimerScreen() {
         {solves.length === 0 && (
           <Text style={styles.noSolvesText}>Sin tiempos</Text>
         )}
-        
-
       </View>
     </View>
   );
@@ -237,7 +240,7 @@ export default function TimerScreen() {
   const showUI = timerState === 'idle' || isInspecting || timerState === 'finished';
 
   return (
-    <View style={[styles.container, isDark && styles.containerDark]}>
+    <View style={[styles.container, { backgroundColor: background }]}>
       
       {/* 1. HEADER (Top Bar) */}
       {timerState === 'idle' && (
@@ -254,7 +257,7 @@ export default function TimerScreen() {
           {/* 2. ÁREA DEL SCRAMBLE */}
           {showUI && (
             <View style={styles.scrambleArea}>
-              <Text style={[styles.scrambleText, isDark && styles.textDark]}>
+              <Text style={[styles.scrambleText, { color: text }]}>
                 {currentScramble}
               </Text>
               <Pressable 
@@ -264,7 +267,7 @@ export default function TimerScreen() {
                   pressed && { opacity: 0.6, transform: [{ scale: 0.9 }] }
                 ]}
               >
-                <Ionicons name="refresh-outline" size={24} color={isDark ? "#adb5bd" : "#868e96"} />
+                <Ionicons name="refresh-outline" size={24} color={muted} />
               </Pressable>
             </View>
           )}
@@ -291,15 +294,15 @@ export default function TimerScreen() {
                 <Pressable onPress={addPenalty} style={[styles.actionButton, styles.buttonPenalty]}>
                   <Text style={styles.penaltyText}>+2s</Text>
                 </Pressable>
-                <Pressable onPress={handleSave} style={[styles.actionButton, styles.buttonSave]}>
+                <Pressable onPress={handleSave} style={[styles.actionButton, { backgroundColor: primary, width: 80, height: 80, borderRadius: 40 }]}>
                   <Ionicons name="checkmark" size={36} color="#fff" />
                 </Pressable>
               </View>
             ) : (
               <View style={styles.instructionContainer}>
                 {timerState === 'idle' && (
-                  <View style={styles.inspectionToggleContainer}>
-                    <Text style={[styles.inspectionText, isDark && styles.textDark]}>{t('timer.inspectionWCA')}</Text>
+                  <View style={[styles.inspectionToggleContainer, { backgroundColor: surface }]}>
+                    <Text style={[styles.inspectionText, { color: text }]}>{t('timer.inspectionWCA')}</Text>
                     <Switch 
                       value={isInspectionEnabled} 
                       onValueChange={setIsInspectionEnabled}
@@ -341,13 +344,13 @@ export default function TimerScreen() {
                 )}
 
                 {instructionText ? (
-                  <Text style={[styles.instructionText, isDark && styles.textLight]}>
+                  <Text style={[styles.instructionText, { color: muted }]}>
                     {instructionText}
                   </Text>
                 ) : null}
                 
                 {isTouch && timerState === 'idle' && (
-                  <Text style={[styles.touchWarning, isDark && styles.textLight]}>
+                  <Text style={[styles.touchWarning, { color: muted }]}>
                     Nota: Realiza dos toques rápidos para detener el cronómetro
                   </Text>
                 )}
@@ -364,30 +367,19 @@ export default function TimerScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8f9fa' },
-  containerDark: { backgroundColor: '#121212' },
-
-  // Main Content
+  container: { flex: 1 },
   mainContent: {
     flex: 1,
     flexDirection: 'row',
   },
   sidebar: {
     width: 180,
-    backgroundColor: 'rgba(0,0,0,0.02)',
-    borderRightWidth: 1,
-    borderRightColor: 'rgba(0,0,0,0.05)',
     paddingTop: 10,
     paddingHorizontal: 15,
-  },
-  sidebarDark: {
-    backgroundColor: 'rgba(255,255,255,0.02)',
-    borderRightColor: 'rgba(255,255,255,0.05)',
   },
   sidebarTitle: {
     fontSize: 14,
     fontWeight: '800',
-    color: '#868e96',
     textTransform: 'uppercase',
     textAlign: 'center',
   },
@@ -410,7 +402,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 6,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(0,0,0,0.05)',
   },
   solveIndex: {
     fontSize: 12,
@@ -420,7 +411,6 @@ const styles = StyleSheet.create({
   solveTime: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#495057',
   },
   sidebarDeleteBtn: {
     padding: 4,
@@ -435,8 +425,6 @@ const styles = StyleSheet.create({
   timerWrapper: {
     flex: 1,
   },
-  
-  // Scramble Area
   scrambleArea: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -450,7 +438,6 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '700',
     textAlign: 'center',
-    color: '#343a40',
     lineHeight: 28,
     flexShrink: 1,
   },
@@ -458,8 +445,6 @@ const styles = StyleSheet.create({
     padding: 8,
     borderRadius: 20,
   },
-
-  // Timer Area
   timerArea: {
     flex: 1,
     justifyContent: 'center',
@@ -472,8 +457,6 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'],
     letterSpacing: -2,
   },
-
-  // Footer
   footer: {
     minHeight: 120,
     justifyContent: 'center',
@@ -486,14 +469,12 @@ const styles = StyleSheet.create({
   },
   instructionText: {
     fontSize: 18,
-    color: '#868e96',
     marginTop: 15,
     fontWeight: '500',
     textAlign: 'center',
   },
   touchWarning: {
     fontSize: 14,
-    color: '#868e96',
     marginTop: 10,
     fontStyle: 'italic',
     textAlign: 'center',
@@ -502,7 +483,6 @@ const styles = StyleSheet.create({
   inspectionToggleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.05)',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
@@ -512,10 +492,7 @@ const styles = StyleSheet.create({
   inspectionText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#212529',
   },
-  textDark: { color: '#f8f9fa' },
-  textLight: { color: '#adb5bd' },
   actionRow: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -536,10 +513,7 @@ const styles = StyleSheet.create({
   },
   buttonDelete: { backgroundColor: '#ff4444' },
   buttonPenalty: { backgroundColor: '#f39c12' },
-  buttonSave: { backgroundColor: '#00C851', width: 80, height: 80, borderRadius: 40 },
   penaltyText: { color: '#fff', fontSize: 22, fontWeight: '800' },
-  
-  // Timer Action Button
   timerActionButton: {
     width: 80,
     height: 80,

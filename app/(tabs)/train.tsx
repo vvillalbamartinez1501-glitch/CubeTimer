@@ -1,7 +1,7 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable, TextInput,
-  useColorScheme, useWindowDimensions, FlatList, Modal,
+  useWindowDimensions, FlatList, Modal, ActivityIndicator
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -12,6 +12,8 @@ import {
 import { useAppStore } from '../../src/store/useAppStore';
 import { AlgorithmImage } from '../../src/components/learning/AlgorithmImage';
 import { Header } from '../../src/components/Header';
+import { useThemeColors } from '../../src/hooks/useThemeColors';
+import { useHydratedStore } from '../../src/hooks/useHydratedStore';
 
 const DRILL_KEY = '@drill_times';
 
@@ -43,30 +45,33 @@ const getStatsForAlg = (times: DrillTime[], id: string) => {
 interface AlgCardProps {
   alg: Algorithm;
   stats: { best: number; avg: number; count: number } | null;
-  isDark: boolean;
   isHighlighted: boolean;
   onToggleFavorite: (id: string) => void;
   onPress: (alg: Algorithm) => void;
   cardWidth: number;
 }
 
-const AlgCard = React.memo(({ alg, stats, isDark, isHighlighted, onToggleFavorite, onPress, cardWidth }: AlgCardProps) => {
-  const cardBg = isDark ? '#1e1e2e' : '#ffffff';
-  const textCol = isDark ? '#e9ecef' : '#212529';
-  const mutedCol = isDark ? '#868e96' : '#6c757d';
-  const accent = alg.group === 'PLL' ? '#e74c3c' : '#3498db';
+const AlgCard = React.memo(({ alg, stats, isHighlighted, onToggleFavorite, onPress, cardWidth }: AlgCardProps) => {
+  const { card: cardBg, text: textCol, muted: mutedCol, primary, border } = useThemeColors();
+  const groupColor = alg.group === 'PLL' ? '#e74c3c' : '#3498db';
 
   return (
     <Pressable
       style={({ pressed }) => [
         styles.algCard,
-        { backgroundColor: cardBg, width: cardWidth, opacity: pressed ? 0.8 : 1 }
+        { 
+          backgroundColor: cardBg, 
+          width: cardWidth, 
+          opacity: pressed ? 0.8 : 1,
+          borderColor: isHighlighted ? primary : border,
+          borderWidth: isHighlighted ? 2 : 1
+        }
       ]}
       onPress={() => onPress(alg)}
     >
       <View style={styles.cardHeader}>
-        <View style={[styles.algBadge, { backgroundColor: accent + '22' }]}>
-          <Text style={[styles.algBadgeText, { color: accent }]}>{alg.group}</Text>
+        <View style={[styles.algBadge, { backgroundColor: groupColor + '22' }]}>
+          <Text style={[styles.algBadgeText, { color: groupColor }]}>{alg.group}</Text>
         </View>
         <Pressable 
           style={styles.starButton}
@@ -76,14 +81,14 @@ const AlgCard = React.memo(({ alg, stats, isDark, isHighlighted, onToggleFavorit
           <Ionicons 
             name={isHighlighted ? "heart" : "heart-outline"} 
             size={22} 
-            color={isHighlighted ? "#ff4757" : mutedCol} 
+            color={isHighlighted ? primary : mutedCol} 
           />
         </Pressable>
       </View>
       
       <Text style={[styles.algName, { color: textCol }]} numberOfLines={1}>{alg.name}</Text>
       
-      <AlgorithmImage imageKey={alg.id} style={styles.algImage} />
+      <AlgorithmImage imageKey={alg.id} size={64} style={styles.algImage} />
       
       <Text style={[styles.algNotation, { color: textCol }]} numberOfLines={2}>
         {alg.algorithm}
@@ -111,8 +116,7 @@ function DrillTimerModal({
   onClose: () => void;
   onSaved: () => void;
 }) {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
+  const { isDark, background: bg, text: textCol, muted: mutedCol, primary, card } = useThemeColors();
 
   const [timerState, setTimerState] = useState<TimerState>('idle');
   const [time, setTime] = useState(0);
@@ -120,11 +124,6 @@ function DrillTimerModal({
   const stateRef = useRef<TimerState>('idle');
   const startRef = useRef<number>(0);
   const rafRef = useRef<number>();
-
-  const bg = isDark ? '#0d0d1a' : '#f0f4f8';
-  const textCol = isDark ? '#e9ecef' : '#212529';
-  const mutedCol = isDark ? '#868e96' : '#6c757d';
-  const accent = alg.group === 'PLL' ? '#e74c3c' : '#3498db';
 
   const setState = (s: TimerState) => { stateRef.current = s; setTimerState(s); };
 
@@ -176,8 +175,8 @@ function DrillTimerModal({
     : null;
 
   const timerColor = timerState === 'holding' ? '#37b24d'
-    : timerState === 'running' ? (isDark ? '#fff' : '#212529')
-    : (isDark ? '#fff' : '#212529');
+    : timerState === 'running' ? primary
+    : textCol;
 
   useEffect(() => {
     return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
@@ -194,11 +193,11 @@ function DrillTimerModal({
           <View style={{ width: 44 }} />
         </View>
 
-        <View style={[styles.algInfoBox, { backgroundColor: isDark ? '#1e1e2e' : '#fff' }]}>
-          <AlgorithmImage imageKey={alg.id} style={{ width: 72, height: 72 }} />
+        <View style={[styles.algInfoBox, { backgroundColor: card }]}>
+          <AlgorithmImage imageKey={alg.id} size={72} />
           <View style={styles.algInfoText}>
             <Text style={[styles.setupLabel, { color: mutedCol }]}>Setup Move</Text>
-            <Text style={[styles.setupAlg, { color: accent }]} selectable>{alg.setup}</Text>
+            <Text style={[styles.setupAlg, { color: primary }]} selectable>{alg.setup}</Text>
             <Text style={[styles.setupLabel, { color: mutedCol, marginTop: 6 }]}>Algoritmo</Text>
             <Text style={[styles.mainAlg, { color: textCol }]} selectable>{alg.algorithm}</Text>
           </View>
@@ -255,7 +254,7 @@ function DrillTimerModal({
         </Pressable>
 
         {times.length > 0 && (
-          <View style={[styles.sessionStats, { backgroundColor: isDark ? '#1e1e2e' : '#fff' }]}>
+          <View style={[styles.sessionStats, { backgroundColor: card }]}>
             <View style={styles.sessionStat}>
               <Text style={[styles.sessionStatVal, { color: '#ffd700' }]}>
                 {formatTime(localBest!)}
@@ -263,7 +262,7 @@ function DrillTimerModal({
               <Text style={[styles.sessionStatLabel, { color: mutedCol }]}>Mejor</Text>
             </View>
             <View style={styles.sessionStat}>
-              <Text style={[styles.sessionStatVal, { color: accent }]}>
+              <Text style={[styles.sessionStatVal, { color: primary }]}>
                 {formatTime(localAvg!)}
               </Text>
               <Text style={[styles.sessionStatLabel, { color: mutedCol }]}>Media</Text>
@@ -281,8 +280,8 @@ function DrillTimerModal({
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function TrainScreen() {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
+  const isHydrated = useHydratedStore();
+  const { background: bg, card: cardBg, text: textCol, muted: mutedCol, primary, surface } = useThemeColors();
   const { width } = useWindowDimensions();
 
   const [tab, setTab] = useState<'OLL' | 'PLL'>('OLL');
@@ -313,12 +312,19 @@ export default function TrainScreen() {
     setDrillTimes(await loadDrillTimes());
   }, []);
 
-  useEffect(() => { reloadTimes(); }, []);
+  useEffect(() => { 
+    if (isHydrated) {
+      reloadTimes(); 
+    }
+  }, [isHydrated, reloadTimes]);
 
-  const bg = isDark ? '#121212' : '#f8f9fa';
-  const cardBg = isDark ? '#1e1e2e' : '#fff';
-  const textCol = isDark ? '#e9ecef' : '#212529';
-  const mutedCol = isDark ? '#868e96' : '#6c757d';
+  if (!isHydrated) {
+    return (
+      <View style={[styles.container, { backgroundColor: bg, justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={primary} />
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.container, { backgroundColor: bg }]}>
@@ -327,22 +333,22 @@ export default function TrainScreen() {
       {/* ── OLL / PLL Tabs ── */}
       <View style={[styles.mainTabBar, { backgroundColor: cardBg }]}>
         <Pressable
-          style={[styles.mainTab, tab === 'OLL' && { borderBottomColor: '#3498db', borderBottomWidth: 3 }]}
+          style={[styles.mainTab, tab === 'OLL' && { borderBottomColor: primary, borderBottomWidth: 3 }]}
           onPress={() => setTab('OLL')}
         >
-          <Text style={[styles.mainTabText, { color: tab === 'OLL' ? '#3498db' : mutedCol }]}>OLL</Text>
+          <Text style={[styles.mainTabText, { color: tab === 'OLL' ? primary : mutedCol }]}>OLL</Text>
         </Pressable>
         <Pressable
-          style={[styles.mainTab, tab === 'PLL' && { borderBottomColor: '#e74c3c', borderBottomWidth: 3 }]}
+          style={[styles.mainTab, tab === 'PLL' && { borderBottomColor: primary, borderBottomWidth: 3 }]}
           onPress={() => setTab('PLL')}
         >
-          <Text style={[styles.mainTabText, { color: tab === 'PLL' ? '#e74c3c' : mutedCol }]}>PLL</Text>
+          <Text style={[styles.mainTabText, { color: tab === 'PLL' ? primary : mutedCol }]}>PLL</Text>
         </Pressable>
       </View>
 
       {/* ── Search Bar ── */}
       <View style={styles.searchContainer}>
-        <View style={[styles.searchBar, { backgroundColor: isDark ? '#2c2c3e' : '#e9ecef' }]}>
+        <View style={[styles.searchBar, { backgroundColor: surface }]}>
           <Ionicons name="search" size={20} color={mutedCol} />
           <TextInput
             style={[styles.searchInput, { color: textCol }]}
@@ -372,7 +378,6 @@ export default function TrainScreen() {
           <AlgCard
             alg={item}
             stats={getStatsForAlg(drillTimes, item.id)}
-            isDark={isDark}
             isHighlighted={highlightedAlgs.includes(item.id)}
             onToggleFavorite={handleToggleFavorite}
             onPress={setSelectedAlg}
