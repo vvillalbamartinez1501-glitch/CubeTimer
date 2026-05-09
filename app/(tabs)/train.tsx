@@ -1,22 +1,22 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, Pressable,
-  useColorScheme, Dimensions, Alert, FlatList, Modal,
+  View, Text, StyleSheet, ScrollView, Pressable, TextInput,
+  useColorScheme, useWindowDimensions, FlatList, Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { formatTime } from '../../src/utils/timeFormat';
 import {
-  PLL_ALGORITHMS, OLL_ALGORITHMS, Algorithm, groupBySubgroup,
+  PLL_ALGORITHMS, OLL_ALGORITHMS, Algorithm,
 } from '../../src/constants/algorithms';
 import { useAppStore } from '../../src/store/useAppStore';
+import { AlgorithmImage } from '../../src/components/learning/AlgorithmImage';
+import { Header } from '../../src/components/Header';
 
-const { width: SW } = Dimensions.get('window');
 const DRILL_KEY = '@drill_times';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface DrillTime { algorithmId: string; time: number; date: string; }
-
 type TimerState = 'idle' | 'holding' | 'running' | 'finished';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -39,83 +39,68 @@ const getStatsForAlg = (times: DrillTime[], id: string) => {
   return { best, avg, count: t.length };
 };
 
-// ─── Mini top-face diagram (SVG-like with Views) ──────────────────────────────
-// Colors represent: U=yellow solved, X=not-oriented (white/grey), S=sticker
-const FACE_COLORS: Record<string, string> = {
-  U: '#ffd700', X: '#aaa', G: '#009b48', R: '#b71234',
-  B: '#0046ad', O: '#ff5800', W: '#fff',
-};
-function TopFaceDiagram({ size = 60, isDark }: { size?: number; isDark: boolean }) {
-  const cell = size / 3;
-  // All-yellow placeholder (solved top face) — could be customized per alg
-  const grid = Array(9).fill('U');
-  return (
-    <View style={{ width: size, height: size, flexDirection: 'row', flexWrap: 'wrap' }}>
-      {grid.map((c, i) => (
-        <View key={i} style={{
-          width: cell, height: cell,
-          backgroundColor: FACE_COLORS[c],
-          borderWidth: 0.5, borderColor: isDark ? '#333' : '#999',
-        }} />
-      ))}
-    </View>
-  );
-}
-
 // ─── Algorithm Card ───────────────────────────────────────────────────────────
-function AlgCard({
-  alg, stats, onSelect, isDark, isHighlighted, onToggleHighlight
-}: {
+interface AlgCardProps {
   alg: Algorithm;
   stats: { best: number; avg: number; count: number } | null;
-  onSelect: (a: Algorithm) => void;
   isDark: boolean;
-  isHighlighted?: boolean;
-  onToggleHighlight?: (id: string) => void;
-}) {
-  const cardBg  = isDark ? '#1e1e2e' : '#fff';
+  isHighlighted: boolean;
+  onToggleFavorite: (id: string) => void;
+  onPress: (alg: Algorithm) => void;
+  cardWidth: number;
+}
+
+const AlgCard = React.memo(({ alg, stats, isDark, isHighlighted, onToggleFavorite, onPress, cardWidth }: AlgCardProps) => {
+  const cardBg = isDark ? '#1e1e2e' : '#ffffff';
   const textCol = isDark ? '#e9ecef' : '#212529';
-  const mutedCol= isDark ? '#868e96' : '#6c757d';
-  const accent  = alg.group === 'PLL' ? '#e74c3c' : '#3498db';
+  const mutedCol = isDark ? '#868e96' : '#6c757d';
+  const accent = alg.group === 'PLL' ? '#e74c3c' : '#3498db';
 
   return (
     <Pressable
       style={({ pressed }) => [
-        styles.algCard, { backgroundColor: cardBg, opacity: pressed ? 0.8 : 1 },
+        styles.algCard,
+        { backgroundColor: cardBg, width: cardWidth, opacity: pressed ? 0.8 : 1 }
       ]}
-      onPress={() => onSelect(alg)}
+      onPress={() => onPress(alg)}
     >
-      <View style={[styles.algBadge, { backgroundColor: accent + '22' }]}>
-        <Text style={[styles.algBadgeText, { color: accent }]}>{alg.group}</Text>
+      <View style={styles.cardHeader}>
+        <View style={[styles.algBadge, { backgroundColor: accent + '22' }]}>
+          <Text style={[styles.algBadgeText, { color: accent }]}>{alg.group}</Text>
+        </View>
+        <Pressable 
+          style={styles.starButton}
+          onPress={(e) => { e.stopPropagation(); onToggleFavorite(alg.id); }}
+          hitSlop={8}
+        >
+          <Ionicons 
+            name={isHighlighted ? "heart" : "heart-outline"} 
+            size={22} 
+            color={isHighlighted ? "#ff4757" : mutedCol} 
+          />
+        </Pressable>
       </View>
-      <Pressable 
-        style={styles.starButton}
-        onPress={(e) => { e.stopPropagation(); onToggleHighlight?.(alg.id); }}
-        hitSlop={8}
-      >
-        <Ionicons 
-          name={isHighlighted ? "star" : "star-outline"} 
-          size={16} 
-          color={isHighlighted ? "#ffd700" : mutedCol} 
-        />
-      </Pressable>
+      
       <Text style={[styles.algName, { color: textCol }]} numberOfLines={1}>{alg.name}</Text>
-      <TopFaceDiagram size={48} isDark={isDark} />
+      
+      <AlgorithmImage imageKey={alg.id} style={styles.algImage} />
+      
+      <Text style={[styles.algNotation, { color: textCol }]} numberOfLines={2}>
+        {alg.algorithm}
+      </Text>
+
       {stats ? (
         <View style={styles.algStats}>
           <Text style={[styles.algStatText, { color: '#37b24d' }]}>
             🏅 {formatTime(stats.best)}
           </Text>
-          <Text style={[styles.algStatText, { color: mutedCol }]}>
-            ⌀ {formatTime(Math.round(stats.avg))}
-          </Text>
         </View>
       ) : (
-        <Text style={[styles.algStatText, { color: mutedCol, marginTop: 4 }]}>No data</Text>
+        <Text style={[styles.algStatText, { color: mutedCol, marginTop: 4 }]}>Sin datos</Text>
       )}
     </Pressable>
   );
-}
+});
 
 // ─── Drill Timer Modal ────────────────────────────────────────────────────────
 function DrillTimerModal({
@@ -130,16 +115,16 @@ function DrillTimerModal({
   const isDark = colorScheme === 'dark';
 
   const [timerState, setTimerState] = useState<TimerState>('idle');
-  const [time, setTime]           = useState(0);
-  const [times, setTimes]         = useState<number[]>([]);
-  const stateRef   = useRef<TimerState>('idle');
-  const startRef   = useRef<number>(0);
-  const rafRef     = useRef<number>();
+  const [time, setTime] = useState(0);
+  const [times, setTimes] = useState<number[]>([]);
+  const stateRef = useRef<TimerState>('idle');
+  const startRef = useRef<number>(0);
+  const rafRef = useRef<number>();
 
-  const bg      = isDark ? '#0d0d1a' : '#f0f4f8';
+  const bg = isDark ? '#0d0d1a' : '#f0f4f8';
   const textCol = isDark ? '#e9ecef' : '#212529';
-  const mutedCol= isDark ? '#868e96' : '#6c757d';
-  const accent  = alg.group === 'PLL' ? '#e74c3c' : '#3498db';
+  const mutedCol = isDark ? '#868e96' : '#6c757d';
+  const accent = alg.group === 'PLL' ? '#e74c3c' : '#3498db';
 
   const setState = (s: TimerState) => { stateRef.current = s; setTimerState(s); };
 
@@ -157,7 +142,7 @@ function DrillTimerModal({
       setState('running');
       rafRef.current = requestAnimationFrame(tick);
     } else if (s === 'running') {
-      cancelAnimationFrame(rafRef.current!);
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
       const elapsed = Date.now() - startRef.current;
       setTime(elapsed);
       setState('finished');
@@ -186,7 +171,7 @@ function DrillTimerModal({
   };
 
   const localBest = times.length > 0 ? Math.min(...times) : null;
-  const localAvg  = times.length > 0
+  const localAvg = times.length > 0
     ? Math.round(times.reduce((a, b) => a + b, 0) / times.length)
     : null;
 
@@ -201,7 +186,6 @@ function DrillTimerModal({
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
       <View style={[styles.modalContainer, { backgroundColor: bg }]}>
-        {/* Header */}
         <View style={styles.modalHeader}>
           <Pressable onPress={onClose} style={styles.closeBtn}>
             <Ionicons name="chevron-down" size={28} color={mutedCol} />
@@ -210,18 +194,16 @@ function DrillTimerModal({
           <View style={{ width: 44 }} />
         </View>
 
-        {/* Algorithm + Setup */}
         <View style={[styles.algInfoBox, { backgroundColor: isDark ? '#1e1e2e' : '#fff' }]}>
-          <TopFaceDiagram size={72} isDark={isDark} />
+          <AlgorithmImage imageKey={alg.id} style={{ width: 72, height: 72 }} />
           <View style={styles.algInfoText}>
             <Text style={[styles.setupLabel, { color: mutedCol }]}>Setup Move</Text>
             <Text style={[styles.setupAlg, { color: accent }]} selectable>{alg.setup}</Text>
-            <Text style={[styles.setupLabel, { color: mutedCol, marginTop: 6 }]}>Algorithm</Text>
+            <Text style={[styles.setupLabel, { color: mutedCol, marginTop: 6 }]}>Algoritmo</Text>
             <Text style={[styles.mainAlg, { color: textCol }]} selectable>{alg.algorithm}</Text>
           </View>
         </View>
 
-        {/* Timer area */}
         <Pressable style={styles.timerArea} onPress={handlePress}>
           <Text style={[styles.drillTimer, { color: timerColor }]}>
             {formatTime(time)}
@@ -248,9 +230,9 @@ function DrillTimerModal({
           )}
 
           <Text style={[styles.drillInstruction, { color: mutedCol }]}>
-            {timerState === 'idle'   && 'Tap to get ready'}
-            {timerState === 'holding'&& '🟢 Release to start'}
-            {timerState === 'running'&& 'Tap to stop'}
+            {timerState === 'idle' && 'Toca para preparar'}
+            {timerState === 'holding' && '🟢 Suelta para iniciar'}
+            {timerState === 'running' && 'Toca para detener'}
             {timerState === 'finished' && ''}
           </Text>
 
@@ -272,74 +254,60 @@ function DrillTimerModal({
           )}
         </Pressable>
 
-        {/* Session stats */}
         {times.length > 0 && (
           <View style={[styles.sessionStats, { backgroundColor: isDark ? '#1e1e2e' : '#fff' }]}>
             <View style={styles.sessionStat}>
               <Text style={[styles.sessionStatVal, { color: '#ffd700' }]}>
                 {formatTime(localBest!)}
               </Text>
-              <Text style={[styles.sessionStatLabel, { color: mutedCol }]}>Best</Text>
+              <Text style={[styles.sessionStatLabel, { color: mutedCol }]}>Mejor</Text>
             </View>
             <View style={styles.sessionStat}>
               <Text style={[styles.sessionStatVal, { color: accent }]}>
                 {formatTime(localAvg!)}
               </Text>
-              <Text style={[styles.sessionStatLabel, { color: mutedCol }]}>Avg</Text>
+              <Text style={[styles.sessionStatLabel, { color: mutedCol }]}>Media</Text>
             </View>
             <View style={styles.sessionStat}>
               <Text style={[styles.sessionStatVal, { color: textCol }]}>{times.length}</Text>
-              <Text style={[styles.sessionStatLabel, { color: mutedCol }]}>Solves</Text>
+              <Text style={[styles.sessionStatLabel, { color: mutedCol }]}>Intentos</Text>
             </View>
           </View>
-        )}
-
-        {/* Recent times */}
-        {times.length > 0 && (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.recentTimesRow}>
-            {[...times].reverse().slice(0, 10).map((t, i) => (
-              <View key={i} style={[styles.recentChip, {
-                backgroundColor: t === localBest ? '#ffd700' + '33' : isDark ? '#2a2a3e' : '#f1f3f5',
-                borderColor: t === localBest ? '#ffd700' : 'transparent',
-              }]}>
-                <Text style={{ color: t === localBest ? '#ffd700' : mutedCol, fontSize: 12 }}>
-                  {formatTime(t)}
-                </Text>
-              </View>
-            ))}
-          </ScrollView>
         )}
       </View>
     </Modal>
   );
 }
 
-import { Header } from '../../src/components/Header';
-
+// ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function TrainScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
+  const { width } = useWindowDimensions();
 
-  const [tab, setTab]             = useState<'PLL' | 'OLL'>('PLL');
+  const [tab, setTab] = useState<'OLL' | 'PLL'>('OLL');
+  const [searchQuery, setSearchQuery] = useState('');
   const [selectedAlg, setSelectedAlg] = useState<Algorithm | null>(null);
-  const [drillTimes, setDrillTimes]   = useState<DrillTime[]>([]);
-  const [filterGroup, setFilterGroup] = useState<string | null>(null);
-  const [showOnlyHighlighted, setShowOnlyHighlighted] = useState(false);
+  const [drillTimes, setDrillTimes] = useState<DrillTime[]>([]);
 
   const { highlightedAlgs, toggleHighlight } = useAppStore();
 
+  const numColumns = width >= 768 ? (width >= 1024 ? 4 : 3) : 2;
+  const cardWidth = (width - 32 - (numColumns - 1) * 12) / numColumns;
+
+  const handleToggleFavorite = useCallback((id: string) => {
+    toggleHighlight(id);
+  }, [toggleHighlight]);
+
   const algorithms = tab === 'PLL' ? PLL_ALGORITHMS : OLL_ALGORITHMS;
-  const grouped    = groupBySubgroup(algorithms);
-  const subgroups  = Object.keys(grouped);
 
-  let filtered = filterGroup
-    ? algorithms.filter(a => a.subgroup === filterGroup)
-    : algorithms;
-
-  if (showOnlyHighlighted) {
-    filtered = filtered.filter(a => highlightedAlgs.includes(a.id));
-  }
+  const filteredData = useMemo(() => {
+    if (!searchQuery.trim()) return algorithms;
+    return algorithms.filter(a => 
+      a.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      a.algorithm.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [algorithms, searchQuery]);
 
   const reloadTimes = useCallback(async () => {
     setDrillTimes(await loadDrillTimes());
@@ -347,107 +315,73 @@ export default function TrainScreen() {
 
   useEffect(() => { reloadTimes(); }, []);
 
-  const bg      = isDark ? '#121212' : '#f0f4f8';
-  const cardBg  = isDark ? '#1e1e2e' : '#fff';
+  const bg = isDark ? '#121212' : '#f8f9fa';
+  const cardBg = isDark ? '#1e1e2e' : '#fff';
   const textCol = isDark ? '#e9ecef' : '#212529';
-  const mutedCol= isDark ? '#868e96' : '#6c757d';
-  const pllColor= '#e74c3c';
-  const ollColor= '#3498db';
-  const accent  = tab === 'PLL' ? pllColor : ollColor;
+  const mutedCol = isDark ? '#868e96' : '#6c757d';
 
   return (
     <View style={[styles.container, { backgroundColor: bg }]}>
       <Header titleKey="tabs.train" />
-      {/* ── PLL / OLL tabs ── */}
+
+      {/* ── OLL / PLL Tabs ── */}
       <View style={[styles.mainTabBar, { backgroundColor: cardBg }]}>
-        {(['PLL', 'OLL'] as const).map(t => (
-          <Pressable
-            key={t}
-            style={[styles.mainTab, tab === t && { borderBottomColor: t === 'PLL' ? pllColor : ollColor, borderBottomWidth: 3 }]}
-            onPress={() => { setTab(t); setFilterGroup(null); }}
-          >
-            <Text style={[styles.mainTabText, { color: tab === t ? (t === 'PLL' ? pllColor : ollColor) : mutedCol }]}>
-              {t}
-            </Text>
-            <Text style={[styles.mainTabCount, { color: mutedCol }]}>
-              {t === 'PLL' ? 21 : 57} cases
-            </Text>
-          </Pressable>
-        ))}
+        <Pressable
+          style={[styles.mainTab, tab === 'OLL' && { borderBottomColor: '#3498db', borderBottomWidth: 3 }]}
+          onPress={() => setTab('OLL')}
+        >
+          <Text style={[styles.mainTabText, { color: tab === 'OLL' ? '#3498db' : mutedCol }]}>OLL</Text>
+        </Pressable>
+        <Pressable
+          style={[styles.mainTab, tab === 'PLL' && { borderBottomColor: '#e74c3c', borderBottomWidth: 3 }]}
+          onPress={() => setTab('PLL')}
+        >
+          <Text style={[styles.mainTabText, { color: tab === 'PLL' ? '#e74c3c' : mutedCol }]}>PLL</Text>
+        </Pressable>
       </View>
 
-      {/* ── Subgroup filter chips ── */}
-      <View style={{ height: 64, backgroundColor: bg }}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.filterRow} style={styles.filterScroll}>
-          <Pressable
-            style={[styles.filterChip, !filterGroup && { backgroundColor: accent }]}
-            onPress={() => setFilterGroup(null)}
-          >
-            <Text style={[styles.filterChipText, { color: !filterGroup ? '#fff' : mutedCol }]}>
-              All
-            </Text>
-          </Pressable>
-          {subgroups.map(sg => (
-            <Pressable
-              key={sg}
-              style={[styles.filterChip, filterGroup === sg && { backgroundColor: accent }]}
-              onPress={() => setFilterGroup(sg === filterGroup ? null : sg)}
-            >
-              <Text style={[styles.filterChipText, { color: filterGroup === sg ? '#fff' : mutedCol }]}>
-                {sg}
-              </Text>
+      {/* ── Search Bar ── */}
+      <View style={styles.searchContainer}>
+        <View style={[styles.searchBar, { backgroundColor: isDark ? '#2c2c3e' : '#e9ecef' }]}>
+          <Ionicons name="search" size={20} color={mutedCol} />
+          <TextInput
+            style={[styles.searchInput, { color: textCol }]}
+            placeholder="Buscar algoritmo..."
+            placeholderTextColor={mutedCol}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+          {searchQuery.length > 0 && (
+            <Pressable onPress={() => setSearchQuery('')}>
+              <Ionicons name="close-circle" size={20} color={mutedCol} />
             </Pressable>
-          ))}
-        </ScrollView>
+          )}
+        </View>
       </View>
 
-      {/* ── View Selector (Todos / Destacados) ── */}
-      <View style={[styles.viewToggleRow, { backgroundColor: bg }]}>
-        <Pressable 
-          style={[styles.viewToggleBtn, !showOnlyHighlighted && styles.viewToggleBtnActive]}
-          onPress={() => setShowOnlyHighlighted(false)}
-        >
-          <Text style={[styles.viewToggleText, !showOnlyHighlighted && styles.viewToggleTextActive]}>Todos</Text>
-        </Pressable>
-        <Pressable 
-          style={[styles.viewToggleBtn, showOnlyHighlighted && styles.viewToggleBtnActive]}
-          onPress={() => setShowOnlyHighlighted(true)}
-        >
-          <Text style={[styles.viewToggleText, showOnlyHighlighted && styles.viewToggleTextActive]}>Destacados</Text>
-        </Pressable>
-      </View>
-
-      {/* ── Algorithm grid ── */}
+      {/* ── Algorithm Grid ── */}
       <FlatList
-        data={filtered}
+        key={`grid-${numColumns}`} // Force re-render on column change
+        data={filteredData}
         keyExtractor={a => a.id}
-        numColumns={3}
+        numColumns={numColumns}
         contentContainerStyle={styles.grid}
-        columnWrapperStyle={styles.gridRow}
+        columnWrapperStyle={{ gap: 12 }}
+        showsVerticalScrollIndicator={false}
         renderItem={({ item }) => (
           <AlgCard
             alg={item}
             stats={getStatsForAlg(drillTimes, item.id)}
-            onSelect={setSelectedAlg}
             isDark={isDark}
             isHighlighted={highlightedAlgs.includes(item.id)}
-            onToggleHighlight={toggleHighlight}
+            onToggleFavorite={handleToggleFavorite}
+            onPress={setSelectedAlg}
+            cardWidth={cardWidth}
           />
         )}
-        ListEmptyComponent={
-          showOnlyHighlighted ? (
-            <View style={styles.emptyContainer}>
-              <Ionicons name="star-outline" size={48} color={mutedCol} />
-              <Text style={[styles.emptyText, { color: textCol }]}>
-                Aún no has destacado ningún algoritmo. Toca la estrella en un algoritmo para guardarlo aquí.
-              </Text>
-            </View>
-          ) : null
-        }
       />
 
-      {/* ── Drill timer modal ── */}
+      {/* ── Drill Timer Modal ── */}
       {selectedAlg && (
         <DrillTimerModal
           alg={selectedAlg}
@@ -461,91 +395,91 @@ export default function TrainScreen() {
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
-const CARD_W = (SW - 48 - 16) / 3;
-
 const styles = StyleSheet.create({
   container: { flex: 1 },
-
-  // Main tabs
   mainTabBar: {
     flexDirection: 'row',
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.07, shadowRadius: 6, elevation: 3,
+    shadowOpacity: 0.05, shadowRadius: 4, elevation: 2,
+    zIndex: 10,
   },
   mainTab: {
     flex: 1, alignItems: 'center', paddingVertical: 14,
     borderBottomWidth: 3, borderBottomColor: 'transparent',
   },
-  mainTabText: { fontSize: 18, fontWeight: '800', letterSpacing: 0.5 },
-  mainTabCount: { fontSize: 11, marginTop: 2 },
-
-  // Filters
-  filterScroll: { height: 64, flexGrow: 0 },
-  filterRow: { paddingHorizontal: 16, paddingVertical: 10, gap: 8, flexDirection: 'row' },
-  filterChip: {
-    paddingHorizontal: 12, paddingVertical: 5, borderRadius: 16,
-    borderWidth: 1, borderColor: '#ced4da',
+  mainTabText: { fontSize: 16, fontWeight: '700', letterSpacing: 0.5 },
+  
+  searchContainer: {
+    padding: 16,
+    paddingBottom: 8,
   },
-  filterChipText: { fontSize: 12, fontWeight: '600' },
-
-  // Grid
-  grid: { padding: 16 },
-  gridRow: { gap: 8, marginBottom: 8 },
-
-  // View Toggle
-  viewToggleRow: {
-    height: 56,
+  searchBar: {
     flexDirection: 'row',
-    paddingHorizontal: 16,
-    gap: 8,
     alignItems: 'center',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    height: 44,
   },
-  viewToggleBtn: {
+  searchInput: {
     flex: 1,
-    paddingVertical: 8,
-    alignItems: 'center',
-    borderRadius: 8,
-    backgroundColor: 'rgba(0,0,0,0.05)',
-  },
-  viewToggleBtnActive: {
-    backgroundColor: 'rgba(0,122,255,0.1)',
-  },
-  viewToggleText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#868e96',
-  },
-  viewToggleTextActive: {
-    color: '#007aff',
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 32,
-    marginTop: 40,
-  },
-  emptyText: {
-    textAlign: 'center',
-    marginTop: 16,
-    fontSize: 14,
-    lineHeight: 20,
-    opacity: 0.8,
+    marginLeft: 8,
+    fontSize: 15,
   },
 
-  // Alg card
+  grid: { padding: 16, gap: 12, paddingBottom: 40 },
+  
   algCard: {
-    width: CARD_W, borderRadius: 14, padding: 10, alignItems: 'center',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08, shadowRadius: 6, elevation: 3,
+    borderRadius: 16,
+    padding: 12,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 3,
   },
-  algBadge: { borderRadius: 8, paddingHorizontal: 6, paddingVertical: 2, marginBottom: 6 },
-  algBadgeText: { fontSize: 9, fontWeight: '800', letterSpacing: 0.5 },
-  starButton: { position: 'absolute', top: 4, right: 4, padding: 4, zIndex: 10 },
-  algName: { fontSize: 11, fontWeight: '700', marginBottom: 8, textAlign: 'center' },
-  algStats: { marginTop: 6, alignItems: 'center', gap: 2 },
-  algStatText: { fontSize: 10, fontWeight: '600' },
+  cardHeader: {
+    flexDirection: 'row',
+    width: '100%',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+  },
+  algBadge: {
+    borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4,
+  },
+  algBadgeText: { fontSize: 10, fontWeight: '800' },
+  starButton: {
+    padding: 4,
+  },
+  algName: {
+    fontSize: 15,
+    fontWeight: '700',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  algImage: {
+    width: 64,
+    height: 64,
+    marginBottom: 12,
+  },
+  algNotation: {
+    fontSize: 12,
+    fontWeight: '500',
+    textAlign: 'center',
+    marginBottom: 8,
+    lineHeight: 18,
+  },
+  algStats: {
+    marginTop: 4,
+    alignItems: 'center',
+  },
+  algStatText: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
 
-  // Modal
+  // Modal styles
   modalContainer: { flex: 1 },
   modalHeader: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
@@ -559,7 +493,7 @@ const styles = StyleSheet.create({
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08, shadowRadius: 8, elevation: 3,
   },
-  algInfoText: { flex: 1 },
+  algInfoText: { flex: 1, justifyContent: 'center' },
   setupLabel: { fontSize: 11, fontWeight: '600', letterSpacing: 0.5, textTransform: 'uppercase' },
   setupAlg: { fontSize: 15, fontWeight: '700', marginTop: 2, lineHeight: 22 },
   mainAlg: { fontSize: 13, lineHeight: 20, marginTop: 2 },
@@ -583,20 +517,14 @@ const styles = StyleSheet.create({
   sessionStats: {
     flexDirection: 'row', justifyContent: 'space-around',
     marginHorizontal: 16, borderRadius: 16, paddingVertical: 16,
+    marginBottom: 32,
     shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.06, shadowRadius: 4, elevation: 2,
   },
   sessionStat: { alignItems: 'center' },
   sessionStatVal: { fontSize: 20, fontWeight: '800' },
   sessionStatLabel: { fontSize: 11, marginTop: 2 },
-
-  recentTimesRow: {
-    paddingHorizontal: 16, paddingVertical: 12, gap: 8,
-  },
-  recentChip: {
-    borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5,
-    borderWidth: 1,
-  },
+  
   timerActionButton: {
     width: 90,
     height: 90,
@@ -610,3 +538,4 @@ const styles = StyleSheet.create({
     marginVertical: 20,
   },
 });
+

@@ -10,6 +10,15 @@ export interface Session {
   createdAt: string;
 }
 
+export type ThemeMode = 'light' | 'dark' | 'system';
+export type AccentColor = 'green' | 'blue' | 'yellow' | 'white' | 'red' | 'orange';
+
+export interface UserSettings {
+  profileName: string;
+  themeMode: ThemeMode;
+  accentColor: AccentColor;
+}
+
 interface AppState {
   // ── Timer & Context ──
   activeUserId: number;
@@ -20,12 +29,16 @@ interface AppState {
   previousSessionId: string | null;
   sessions: Session[];
   highlightedAlgs: string[];
+  settings: UserSettings;
 
   // ── Actions ──
   generateNewScramble: (puzzleId?: string) => void;
   setActiveCategory: (id: string, customName?: string) => void;
   setActiveUser: (id: number) => void;
   toggleHighlight: (algId: string) => void;
+  setProfileName: (name: string) => void;
+  setThemeMode: (mode: ThemeMode) => void;
+  setAccentColor: (color: AccentColor) => void;
   
   // ── Session Actions ──
   createSession: (name: string) => void;
@@ -53,6 +66,11 @@ export const useAppStore = create<AppState>()(
         }
       ],
       highlightedAlgs: [],
+      settings: {
+        profileName: 'Cuber',
+        themeMode: 'system',
+        accentColor: 'green',
+      },
 
       generateNewScramble: (puzzleId?: string) => {
         const id = puzzleId || get().activeCategoryId;
@@ -93,6 +111,18 @@ export const useAppStore = create<AppState>()(
         } else {
           set({ highlightedAlgs: [...currentHighlighted, algId] });
         }
+      },
+
+      setProfileName: (name: string) => {
+        set({ settings: { ...get().settings, profileName: name } });
+      },
+
+      setThemeMode: (mode: ThemeMode) => {
+        set({ settings: { ...get().settings, themeMode: mode } });
+      },
+
+      setAccentColor: (color: AccentColor) => {
+        set({ settings: { ...get().settings, accentColor: color } });
       },
 
       // ── Session Logic ──
