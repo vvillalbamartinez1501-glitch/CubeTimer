@@ -1,18 +1,18 @@
 import React, { useMemo } from 'react';
-import { StyleSheet, View, ViewStyle, Platform, Image } from 'react-native';
+import { StyleSheet, View, ViewStyle, Platform, Image, Text } from 'react-native';
 import { CubeAssets } from '../../data/imageIndex';
 import { useHydratedStore } from '../../hooks/useHydratedStore';
 
 interface AlgorithmImageProps {
-  imageKey: string; // ej: "notation.2x2.L"
+  imageKey: string; // ej: "resolution.3x3.full_fridrich.oll1"
   size?: number;
   color?: string;
   style?: ViewStyle;
 }
 
 /**
- * Component to render algorithm images/SVGs with hydration safety.
- * Optimized for React Native Web and Mobile SVG rendering.
+ * Universal Algorithm Image Component
+ * Handles SVG rendering across Web and Native with a robust fallback system.
  */
 export const AlgorithmImage = React.memo(({ imageKey, size = 100, color, style }: AlgorithmImageProps) => {
   const isHydrated = useHydratedStore();
@@ -22,70 +22,102 @@ export const AlgorithmImage = React.memo(({ imageKey, size = 100, color, style }
     const parts = imageKey.split('.');
     let current: any = CubeAssets;
     
-    for (const part of parts) {
-      if (current && current[part]) {
-        current = current[part];
-      } else {
-        current = null;
-        break;
+    try {
+      for (const part of parts) {
+        if (current && typeof current === 'object' && part in current) {
+          current = current[part];
+        } else {
+          return null;
+        }
       }
+      return current;
+    } catch (e) {
+      return null;
     }
-    return current;
   }, [imageKey]);
 
-  // Fallback de Hidratación: Mientras no esté hidratado, devuelve un contenedor vacío 
-  // con las mismas dimensiones para evitar saltos visuales.
+  // Contenedor base para mantener el layout
+  const containerStyle = [
+    { width: size, height: size, aspectRatio: 1 as const },
+    style
+  ];
+
+  // 1. Fallback de Hidratación: Evita parpadeos y errores de servidor en Web
   if (!isHydrated) {
-    return <View style={[{ width: size, height: size }, style]} />;
+    return <View style={containerStyle} />;
   }
 
-  // Seguridad: Si el ID no existe, renderiza un placeholder elegante
+  // 2. Placeholder Visual: Si el activo no existe o es nulo
   if (!asset) {
     return (
-      <View style={[styles.placeholder, { width: size, height: size }, style]}>
+      <View style={[styles.placeholder, containerStyle]}>
         <View style={styles.placeholderInner} />
+        {/* Opcional: Debug tag en desarrollo */}
+        {__DEV__ && <Text style={styles.debugText}>Empty</Text>}
       </View>
     );
   }
 
-  // Si el asset es un componente funcional (SVG detectado por el transformer)
+  // 3. Renderizado Inteligente
+  
+  // Caso A: El activo es un componente funcional (Native SVG Transformer)
   if (typeof asset === 'function') {
     const SvgComponent = asset;
     return (
-      <View style={[{ width: size, height: size }, style]}>
+      <View style={containerStyle}>
         <SvgComponent 
           width={size} 
           height={size} 
           fill={color || '#000'} 
-          viewBox="0 0 100 100" // Dimensionamiento explícito para evitar 0x0 en web
+          viewBox="0 0 100 100" // Asegura escalado proporcional
         />
       </View>
     );
   }
 
-  // Manejo de assets que regresan como string (URLs) o objetos de require en Web
+  // Caso B: El activo es una referencia estática (Web require -> string o number ID)
+  // En Web, a menudo el require devuelve la ruta del archivo.
+  const isWeb = Platform.OS === 'web';
   const source = typeof asset === 'string' ? { uri: asset } : asset;
 
   return (
-    <Image 
-      source={source} 
-      style={[{ width: size, height: size }, style]} 
-      resizeMode="contain" 
-    />
+    <View style={containerStyle}>
+      <Image 
+        source={source} 
+        style={styles.imageFull}
+        resizeMode="contain"
+        // En Web, forzamos dimensiones explícitas en el DOM
+        {...(isWeb ? { width: size, height: size } : {})}
+      />
+    </View>
   );
 });
 
 const styles = StyleSheet.create({
+  imageFull: {
+    width: '100%',
+    height: '100%',
+  },
   placeholder: {
-    backgroundColor: 'rgba(0,0,0,0.05)',
-    borderRadius: 8,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+    borderStyle: 'dashed',
   },
   placeholderInner: {
-    width: '60%',
-    height: '60%',
-    backgroundColor: 'rgba(0,0,0,0.1)',
-    borderRadius: 4,
+    width: '40%',
+    height: '40%',
+    backgroundColor: '#adb5bd',
+    borderRadius: 8,
+    opacity: 0.2,
+  },
+  debugText: {
+    fontSize: 8,
+    color: '#ced4da',
+    position: 'absolute',
+    bottom: 4,
   }
 });
