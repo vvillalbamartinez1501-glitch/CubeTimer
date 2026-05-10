@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { 
   StyleSheet, Text, View, ScrollView, TextInput, Pressable, 
-  useWindowDimensions, ActivityIndicator
+  useWindowDimensions, ActivityIndicator, Platform
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppStore, ThemeMode, AccentColor } from '../../src/store/useAppStore';
@@ -194,8 +194,20 @@ const styles = StyleSheet.create({
   
   profileCard: {
     borderRadius: 24, padding: 24, marginBottom: 24, alignItems: 'center',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1, shadowRadius: 12, elevation: 4,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 12,
+      },
+      android: {
+        elevation: 4,
+      },
+      web: {
+        boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)',
+      }
+    }),
   },
   iconBg: { 
     width: 80, height: 80, borderRadius: 40, justifyContent: 'center', 
@@ -211,8 +223,20 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: 18, fontWeight: '700', paddingLeft: 4, marginBottom: 12 },
   card: {
     borderRadius: 20, overflow: 'hidden',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.07, shadowRadius: 8, elevation: 3,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.07,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 3,
+      },
+      web: {
+        boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.07)',
+      }
+    }),
   },
   settingRow: { padding: 16 },
   settingLabel: { fontSize: 16, fontWeight: '600', marginBottom: 12 },

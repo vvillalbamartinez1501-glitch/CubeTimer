@@ -1,7 +1,7 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable, TextInput,
-  useWindowDimensions, FlatList, Modal, ActivityIndicator
+  useWindowDimensions, FlatList, Modal, ActivityIndicator, Platform
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -404,8 +404,20 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   mainTabBar: {
     flexDirection: 'row',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05, shadowRadius: 4, elevation: 2,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 2,
+      },
+      web: {
+        boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.05)',
+      }
+    }),
     zIndex: 10,
   },
   mainTab: {
@@ -437,11 +449,20 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 12,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    elevation: 3,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 6,
+      },
+      android: {
+        elevation: 3,
+      },
+      web: {
+        boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.08)',
+      }
+    }),
   },
   cardHeader: {
     flexDirection: 'row',
@@ -495,8 +516,20 @@ const styles = StyleSheet.create({
 
   algInfoBox: {
     flexDirection: 'row', margin: 16, borderRadius: 16, padding: 16, gap: 16,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08, shadowRadius: 8, elevation: 3,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 3,
+      },
+      web: {
+        boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.08)',
+      }
+    }),
   },
   algInfoText: { flex: 1, justifyContent: 'center' },
   setupLabel: { fontSize: 11, fontWeight: '600', letterSpacing: 0.5, textTransform: 'uppercase' },
@@ -515,16 +548,40 @@ const styles = StyleSheet.create({
   drillActionBtn: {
     width: 64, height: 64, borderRadius: 32,
     justifyContent: 'center', alignItems: 'center',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2, shadowRadius: 6, elevation: 4,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 6,
+      },
+      android: {
+        elevation: 4,
+      },
+      web: {
+        boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.2)',
+      }
+    }),
   },
 
   sessionStats: {
     flexDirection: 'row', justifyContent: 'space-around',
     marginHorizontal: 16, borderRadius: 16, paddingVertical: 16,
     marginBottom: 32,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06, shadowRadius: 4, elevation: 2,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.06,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 2,
+      },
+      web: {
+        boxShadow: '0px 1px 4px rgba(0, 0, 0, 0.06)',
+      }
+    }),
   },
   sessionStat: { alignItems: 'center' },
   sessionStatVal: { fontSize: 20, fontWeight: '800' },

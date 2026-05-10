@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, View, Image, ActivityIndicator, useColorScheme } from 'react-native';
+import { StyleSheet, View, Image, ActivityIndicator, useColorScheme, Platform } from 'react-native';
 
 interface ScrambleImageProps {
   scramble: string;
@@ -62,13 +62,21 @@ const styles = StyleSheet.create({
     minHeight: 160,
     width: '90%',
     alignSelf: 'center',
-    // Shadow for iOS
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    // Elevation for Android
-    elevation: 3,
+    // Shadow for iOS / Web
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 3,
+      },
+      web: {
+        boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.1)',
+      }
+    }),
   },
   image: {
     width: 150,

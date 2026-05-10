@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View, Pressable, useColorScheme, Modal, TextInput, FlatList, Alert, useWindowDimensions } from 'react-native';
+import { StyleSheet, Text, View, Pressable, useColorScheme, Modal, TextInput, FlatList, Alert, useWindowDimensions, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
@@ -300,11 +300,20 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     padding: 24,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.25,
-    shadowRadius: 15,
-    elevation: 10,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.25,
+        shadowRadius: 15,
+      },
+      android: {
+        elevation: 10,
+      },
+      web: {
+        boxShadow: '0px 10px 15px rgba(0, 0, 0, 0.25)',
+      }
+    }),
   },
   modalContentDark: {
     backgroundColor: '#1e1e2e',

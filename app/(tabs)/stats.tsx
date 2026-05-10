@@ -6,6 +6,7 @@ import {
   ScrollView,
   Dimensions,
   useColorScheme,
+  Platform,
 } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -280,11 +281,20 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     borderRadius: 16,
     padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 3,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 3,
+      },
+      web: {
+        boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.05)',
+      }
+    }),
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -350,11 +360,20 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 20,
     gap: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 3,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.08,
+        shadowRadius: 12,
+      },
+      android: {
+        elevation: 3,
+      },
+      web: {
+        boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.08)',
+      }
+    }),
   },
   syncBannerIcon: {
     width: 44,

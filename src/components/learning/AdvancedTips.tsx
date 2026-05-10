@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, Text, View, ScrollView, useColorScheme } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, useColorScheme, Platform } from 'react-native';
 import { advancedTips } from '../../constants/learningData';
 
 export const AdvancedTips = () => {
@@ -37,11 +37,20 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 3,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 3,
+      },
+      web: {
+        boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.08)',
+      }
+    }),
   },
   cardDark: {
     backgroundColor: '#1e1e1e',
